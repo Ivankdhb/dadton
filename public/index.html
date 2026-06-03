@@ -73,11 +73,11 @@
         .rank-2 { color: #c0c0c0; }
         .rank-3 { color: #cd7f32; }
         .leader-info { display: flex; align-items: center; gap: 12px; flex: 1; }
-        .leader-avatar { width: 40px; height: 40px; border-radius: 50%; background-size: cover; background-position: center; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: bold; background: linear-gradient(135deg, #f59e0b, #ef4444); }
+        .leader-avatar { width: 40px; height: 40px; border-radius: 50%; background-size: cover; background-position: center; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: bold; background: linear-gradient(135deg, #f59e0b, #ef4444); overflow: hidden; }
         .leader-name { font-weight: 600; }
         .leader-score { color: #ffaa00; font-weight: 700; }
         
-        .profile-avatar { width: 80px; height: 80px; border-radius: 50%; background-size: cover; background-position: center; display: flex; align-items: center; justify-content: center; font-size: 36px; margin: 0 auto 12px; background: linear-gradient(135deg, #f59e0b, #ef4444); }
+        .profile-avatar { width: 80px; height: 80px; border-radius: 50%; background-size: cover; background-position: center; display: flex; align-items: center; justify-content: center; font-size: 36px; margin: 0 auto 12px; background: linear-gradient(135deg, #f59e0b, #ef4444); overflow: hidden; }
         .profile-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
         .stat-card { background: #1e295d; border-radius: 16px; padding: 12px; text-align: center; }
         
@@ -234,38 +234,43 @@
 <div id="toast" class="toast"></div>
 
 <script>
-    const socket = io();
+    // ИНИЦИАЛИЗАЦИЯ TELEGRAM WEBAPP
     const tg = window.Telegram?.WebApp;
+    if (tg) {
+        tg.ready();
+        tg.expand();
+    }
+    
+    const socket = io();
     const user = tg?.initDataUnsafe?.user;
     const uid = user ? user.id.toString() : 'p' + Math.floor(Math.random() * 1000000);
     const pname = user ? (user.first_name + (user.last_name ? ' ' + user.last_name : '')) : 'Игрок';
     
-    // ПОЛУЧАЕМ РЕАЛЬНУЮ АВАТАРКУ ИЗ TELEGRAM
+    // ПОЛУЧАЕМ РЕАЛЬНУЮ АВАТАРКУ ИЗ TELEGRAM (ЧЕРЕЗ photo_url)
     let userAvatarUrl = '';
-    let userAvatarText = '👤';
-    
-    if (user?.photo_url) {
-        // Если есть фото — используем URL
+    if (user && user.photo_url) {
         userAvatarUrl = user.photo_url;
-        userAvatarText = '';
-    } else if (user?.first_name) {
-        // Если нет фото — используем первую букву имени
-        userAvatarText = user.first_name.charAt(0).toUpperCase();
-        userAvatarUrl = '';
-    } else {
-        userAvatarText = '👤';
-        userAvatarUrl = '';
+    } else if (user && user.first_name) {
+        userAvatarUrl = ''; // будет использована буква
     }
     
     // Функция для отображения аватарки в HTML
-    function getAvatarHtml(avatarData, name) {
-        if (avatarData && avatarData.startsWith('http')) {
-            return `<img src="${avatarData}" class="avatar-img" onerror="this.style.display='none'; this.parentElement.innerHTML='${name ? name.charAt(0).toUpperCase() : '?'}'">`;
-        } else if (avatarData && avatarData.length === 1 && avatarData !== '👤') {
-            return `<span style="font-size: 18px; font-weight: bold;">${avatarData}</span>`;
+    function getAvatarHtml(avatarUrl, name) {
+        if (avatarUrl && avatarUrl.startsWith('http')) {
+            return `<img src="${avatarUrl}" class="avatar-img" onerror="this.style.display='none'; this.parentElement.innerHTML='${name ? name.charAt(0).toUpperCase() : '?'}'">`;
         } else {
             const letter = name ? name.charAt(0).toUpperCase() : '?';
             return `<span style="font-size: 18px; font-weight: bold;">${letter}</span>`;
+        }
+    }
+    
+    // Функция для обновления аватарки в профиле
+    function updateProfileAvatar() {
+        const profileAvatar = document.getElementById('profileAvatar');
+        if (userAvatarUrl) {
+            profileAvatar.innerHTML = `<img src="${userAvatarUrl}" class="avatar-img" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`;
+        } else {
+            profileAvatar.innerHTML = pname ? pname.charAt(0).toUpperCase() : '👤';
         }
     }
     
@@ -291,15 +296,7 @@
         document.getElementById('rouletteBet').innerText = rouletteBet;
         document.getElementById('profName').innerText = pname;
         document.getElementById('profUser').innerText = user ? ('@' + (user.username || user.first_name)) : '@player';
-        
-        // Обновляем аватарку в профиле
-        const profileAvatar = document.getElementById('profileAvatar');
-        if (userAvatarUrl) {
-            profileAvatar.innerHTML = `<img src="${userAvatarUrl}" class="avatar-img" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`;
-        } else {
-            profileAvatar.innerHTML = userAvatarText || (pname ? pname.charAt(0).toUpperCase() : '👤');
-        }
-        
+        updateProfileAvatar();
         document.getElementById('profGames').innerText = games;
         document.getElementById('profTurn').innerText = turnover;
         document.getElementById('profWins').innerText = wins;
@@ -312,7 +309,7 @@
     }
     
     // Регистрация с передачей аватарки
-    socket.emit('register', { telegram_id: uid, name: pname, avatar: userAvatarUrl || userAvatarText }, (res) => { if (res?.success) { stars = res.stars; updateUI(); } });
+    socket.emit('register', { telegram_id: uid, name: pname, avatar: userAvatarUrl || pname.charAt(0).toUpperCase() }, (res) => { if (res?.success) { stars = res.stars; updateUI(); } });
     
     function toggleAutoCashout() {
         if (hasActiveBet) {
@@ -431,7 +428,7 @@
         btn.disabled = true;
         btn.innerText = "⏳ Обработка...";
         
-        socket.emit('rocket_place_bet', { telegram_id: uid, name: pname, amount: crashBet, autoCashout: autoCashoutValue, avatar: userAvatarUrl || userAvatarText }, (res) => {
+        socket.emit('rocket_place_bet', { telegram_id: uid, name: pname, amount: crashBet, autoCashout: autoCashoutValue, avatar: userAvatarUrl || pname.charAt(0).toUpperCase() }, (res) => {
             btn.disabled = false;
             if (res?.success) {
                 hasActiveBet = true;
@@ -650,7 +647,7 @@
     function placeRoulette() {
         if (rouletteSpinning) { toast("Рулетка крутится"); return; }
         if (stars < rouletteBet) { toast("Не хватает звёзд"); return; }
-        socket.emit('roulette_place_bet', { telegram_id: uid, name: pname, amount: rouletteBet, avatar: userAvatarUrl || userAvatarText }, (res) => { if (res?.success) refreshBalance(); else toast(res?.error); });
+        socket.emit('roulette_place_bet', { telegram_id: uid, name: pname, amount: rouletteBet, avatar: userAvatarUrl || pname.charAt(0).toUpperCase() }, (res) => { if (res?.success) refreshBalance(); else toast(res?.error); });
     }
     
     function spinRoulette() { if (rouletteSpinning) { toast("Рулетка уже крутится"); return; } if (rouletteBets.length === 0) { toast("Нет ставок"); return; } socket.emit('roulette_spin'); }
