@@ -48,20 +48,13 @@ let rocketState = {
 let rocketInterval = null;
 let countdownInterval = null;
 
-// РАЗНООБРАЗНЫЕ ИКСЫ (от 1.05 до 5.00+)
 function generateCrashPoint() {
     let r = Math.random();
-    // 25% — маленькие иксы (1.05 - 1.20)
     if (r < 0.25) return 1.05 + Math.random() * 0.15;
-    // 25% — средние (1.20 - 1.50)
     if (r < 0.50) return 1.20 + Math.random() * 0.30;
-    // 20% — хорошие (1.50 - 2.00)
     if (r < 0.70) return 1.50 + Math.random() * 0.50;
-    // 15% — высокие (2.00 - 3.00)
     if (r < 0.85) return 2.00 + Math.random() * 1.00;
-    // 10% — очень высокие (3.00 - 5.00)
     if (r < 0.95) return 3.00 + Math.random() * 2.00;
-    // 5% — экстрим (5.00 - 8.00)
     return 5.00 + Math.random() * 3.00;
 }
 
@@ -100,13 +93,25 @@ function startRocketFlying() {
     
     if (rocketInterval) clearInterval(rocketInterval);
     
+    // ДИНАМИЧЕСКАЯ СКОРОСТЬ: чем выше множитель, тем быстрее растёт
+    let lastMultiplier = 1.00;
+    let lastTime = Date.now();
+    
     rocketInterval = setInterval(() => {
         if (rocketState.status !== 'flying') {
             clearInterval(rocketInterval);
             return;
         }
         
-        rocketState.currentMultiplier += 0.01;
+        const now = Date.now();
+        const delta = Math.min(100, now - lastTime);
+        lastTime = now;
+        
+        // Базовая скорость + ускорение от текущего множителя
+        let speed = 0.008 + (rocketState.currentMultiplier * 0.003);
+        speed = Math.min(speed, 0.035); // ограничиваем максимальную скорость
+        
+        rocketState.currentMultiplier += speed;
         
         if (rocketState.currentMultiplier >= rocketState.crashPoint) {
             clearInterval(rocketInterval);
@@ -121,7 +126,7 @@ function startRocketFlying() {
         } else {
             io.emit('rocket_multiplier', rocketState.currentMultiplier);
         }
-    }, 100);
+    }, 50); // обновление каждые 50мс (быстрее)
 }
 
 let minesState = new Map();
@@ -491,13 +496,9 @@ server.listen(PORT, () => {
     ║   🚀 DADTON СЕРВЕР ЗАПУЩЕН          ║
     ║   http://localhost:${PORT}              ║
     ║                                      ║
-    ║   📊 ИКСЫ: разнообразные             ║
-    ║   - 25%: 1.05-1.20x                 ║
-    ║   - 25%: 1.20-1.50x                 ║
-    ║   - 20%: 1.50-2.00x                 ║
-    ║   - 15%: 2.00-3.00x                 ║
-    ║   - 10%: 3.00-5.00x                 ║
-    ║   - 5%:  5.00-8.00x                 ║
+    ║   ⚡ ДИНАМИЧЕСКАЯ СКОРОСТЬ:         ║
+    ║   - Чем выше множитель, тем быстрее ║
+    ║   - Обновление каждые 50мс          ║
     ╚══════════════════════════════════════╝
     `);
 });
