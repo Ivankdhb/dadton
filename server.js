@@ -2,6 +2,7 @@ const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
 const sqlite3 = require('sqlite3').verbose();
+const path = require('path');
 
 const app = express();
 const server = http.createServer(app);
@@ -48,16 +49,11 @@ let rocketState = {
 let rocketInterval = null;
 let countdownInterval = null;
 
-// ИКСЫ ПОНИЖЕНЫ - частые маленькие краши
 function generateCrashPoint() {
     let r = Math.random();
-    // 70% шанс на краш до 1.20x
     if (r < 0.70) return 1.00 + Math.random() * 0.20;
-    // 20% шанс на краш 1.20x - 1.60x
     if (r < 0.90) return 1.20 + Math.random() * 0.40;
-    // 8% шанс на краш 1.60x - 2.50x
     if (r < 0.98) return 1.60 + Math.random() * 0.90;
-    // 2% шанс на высокий краш 2.50x - 4.00x
     return 2.50 + Math.random() * 1.50;
 }
 
@@ -199,6 +195,7 @@ io.on('connection', (socket) => {
                 return;
             }
             
+            // Списание звёзд и увеличение счётчика игр
             db.run(`UPDATE users SET stars = stars - ?, games_played = games_played + 1 WHERE telegram_id = ?`, [amount, telegram_id]);
             
             rocketState.bets.push({
@@ -209,6 +206,31 @@ io.on('connection', (socket) => {
             io.emit('rocket_bet_placed', { name, amount, autoCashout, avatar: avatar || '👤' });
             if (callback) callback({ success: true });
         });
+    });
+    
+    // НОВЫЙ СОКЕТ: ОТМЕНА СТАВКИ (возврат звёзд, без засчитывания игры)
+    socket.on('rocket_cancel_bet', (data, callback) => {
+        const { telegram_id } = data;
+        
+        // Ищем ставку игрока в текущем раунде
+        const betIndex = rocketState.bets.findIndex(b => b.telegram_id === telegram_id && !b.cashedAt);
+        
+        if (betIndex === -1) {
+            if (callback) callback({ success: false, error: 'Ставка не найдена' });
+            return;
+        }
+        
+        const bet = rocketState.bets[betIndex];
+        
+        // Возвращаем звёзды
+        db.run(`UPDATE users SET stars = stars + ?, games_played = games_played - 1 WHERE telegram_id = ?`, [bet.amount, telegram_id]);
+        
+        // Удаляем ставку из массива
+        rocketState.bets.splice(betIndex, 1);
+        
+        io.emit('rocket_bet_cancelled', { telegram_id, name: bet.name });
+        
+        if (callback) callback({ success: true, amount: bet.amount });
     });
     
     socket.on('rocket_cashout', (data, callback) => {
@@ -468,6 +490,7 @@ server.listen(PORT, () => {
     ║                                      ║
     ║   📊 ИКСЫ: 70% до 1.20x             ║
     ║   ⚡ Автовывод: точный               ║
+    ║   ❌ Отмена ставки: возврат звёзд    ║
     ╚══════════════════════════════════════╝
     `);
 });
