@@ -2,7 +2,6 @@ const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
 const sqlite3 = require('sqlite3').verbose();
-const path = require('path');
 
 const app = express();
 const server = http.createServer(app);
@@ -49,12 +48,21 @@ let rocketState = {
 let rocketInterval = null;
 let countdownInterval = null;
 
+// РАЗНООБРАЗНЫЕ ИКСЫ (от 1.05 до 5.00+)
 function generateCrashPoint() {
     let r = Math.random();
-    if (r < 0.70) return 1.00 + Math.random() * 0.20;
-    if (r < 0.90) return 1.20 + Math.random() * 0.40;
-    if (r < 0.98) return 1.60 + Math.random() * 0.90;
-    return 2.50 + Math.random() * 1.50;
+    // 25% — маленькие иксы (1.05 - 1.20)
+    if (r < 0.25) return 1.05 + Math.random() * 0.15;
+    // 25% — средние (1.20 - 1.50)
+    if (r < 0.50) return 1.20 + Math.random() * 0.30;
+    // 20% — хорошие (1.50 - 2.00)
+    if (r < 0.70) return 1.50 + Math.random() * 0.50;
+    // 15% — высокие (2.00 - 3.00)
+    if (r < 0.85) return 2.00 + Math.random() * 1.00;
+    // 10% — очень высокие (3.00 - 5.00)
+    if (r < 0.95) return 3.00 + Math.random() * 2.00;
+    // 5% — экстрим (5.00 - 8.00)
+    return 5.00 + Math.random() * 3.00;
 }
 
 function startRocketCountdown() {
@@ -195,7 +203,6 @@ io.on('connection', (socket) => {
                 return;
             }
             
-            // Списание звёзд и увеличение счётчика игр
             db.run(`UPDATE users SET stars = stars - ?, games_played = games_played + 1 WHERE telegram_id = ?`, [amount, telegram_id]);
             
             rocketState.bets.push({
@@ -208,11 +215,9 @@ io.on('connection', (socket) => {
         });
     });
     
-    // НОВЫЙ СОКЕТ: ОТМЕНА СТАВКИ (возврат звёзд, без засчитывания игры)
     socket.on('rocket_cancel_bet', (data, callback) => {
         const { telegram_id } = data;
         
-        // Ищем ставку игрока в текущем раунде
         const betIndex = rocketState.bets.findIndex(b => b.telegram_id === telegram_id && !b.cashedAt);
         
         if (betIndex === -1) {
@@ -222,10 +227,8 @@ io.on('connection', (socket) => {
         
         const bet = rocketState.bets[betIndex];
         
-        // Возвращаем звёзды
         db.run(`UPDATE users SET stars = stars + ?, games_played = games_played - 1 WHERE telegram_id = ?`, [bet.amount, telegram_id]);
         
-        // Удаляем ставку из массива
         rocketState.bets.splice(betIndex, 1);
         
         io.emit('rocket_bet_cancelled', { telegram_id, name: bet.name });
@@ -488,9 +491,13 @@ server.listen(PORT, () => {
     ║   🚀 DADTON СЕРВЕР ЗАПУЩЕН          ║
     ║   http://localhost:${PORT}              ║
     ║                                      ║
-    ║   📊 ИКСЫ: 70% до 1.20x             ║
-    ║   ⚡ Автовывод: точный               ║
-    ║   ❌ Отмена ставки: возврат звёзд    ║
+    ║   📊 ИКСЫ: разнообразные             ║
+    ║   - 25%: 1.05-1.20x                 ║
+    ║   - 25%: 1.20-1.50x                 ║
+    ║   - 20%: 1.50-2.00x                 ║
+    ║   - 15%: 2.00-3.00x                 ║
+    ║   - 10%: 3.00-5.00x                 ║
+    ║   - 5%:  5.00-8.00x                 ║
     ╚══════════════════════════════════════╝
     `);
 });
