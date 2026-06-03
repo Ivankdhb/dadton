@@ -2,7 +2,6 @@ const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
 const sqlite3 = require('sqlite3').verbose();
-const path = require('path');
 
 const app = express();
 const server = http.createServer(app);
@@ -49,15 +48,17 @@ let rocketState = {
 let rocketInterval = null;
 let countdownInterval = null;
 
+// ИКСЫ ПОНИЖЕНЫ - частые маленькие краши
 function generateCrashPoint() {
     let r = Math.random();
-    if (r < 0.05) return 1.00 + Math.random() * 0.10;
-    if (r < 0.15) return 1.10 + Math.random() * 0.20;
-    if (r < 0.35) return 1.30 + Math.random() * 0.50;
-    if (r < 0.60) return 1.80 + Math.random() * 1.20;
-    if (r < 0.80) return 3.00 + Math.random() * 2.00;
-    if (r < 0.95) return 5.00 + Math.random() * 3.00;
-    return 8.00 + Math.random() * 5.00;
+    // 70% шанс на краш до 1.20x
+    if (r < 0.70) return 1.00 + Math.random() * 0.20;
+    // 20% шанс на краш 1.20x - 1.60x
+    if (r < 0.90) return 1.20 + Math.random() * 0.40;
+    // 8% шанс на краш 1.60x - 2.50x
+    if (r < 0.98) return 1.60 + Math.random() * 0.90;
+    // 2% шанс на высокий краш 2.50x - 4.00x
+    return 2.50 + Math.random() * 1.50;
 }
 
 function startRocketCountdown() {
@@ -101,7 +102,7 @@ function startRocketFlying() {
             return;
         }
         
-        rocketState.currentMultiplier += 0.02;
+        rocketState.currentMultiplier += 0.01;
         
         if (rocketState.currentMultiplier >= rocketState.crashPoint) {
             clearInterval(rocketInterval);
@@ -464,6 +465,9 @@ server.listen(PORT, () => {
     ╔══════════════════════════════════════╗
     ║   🚀 DADTON СЕРВЕР ЗАПУЩЕН          ║
     ║   http://localhost:${PORT}              ║
+    ║                                      ║
+    ║   📊 ИКСЫ: 70% до 1.20x             ║
+    ║   ⚡ Автовывод: точный               ║
     ╚══════════════════════════════════════╝
     `);
 });
