@@ -178,43 +178,44 @@
     let currentMultiplier = 1;
     
     // Mines & Roulette
-    let minesBet = 20, minesActive = false, minesRevealed = 0, minesBetAmount = 0, minesMult = 1;
-    let rouletteBet = 10, rouletteBets = [], rouletteSpinning = false;
-    let gameHistory = [];
     
-    function toast(msg) { const t = document.getElementById('toast'); t.innerText = msg; t.style.display = 'block'; setTimeout(() => t.style.display = 'none', 2000); }
-    
-    function updateUI() {
-        document.getElementById('balance').innerText = stars;
-        document.getElementById('crashBet').innerText = currentBet;
-        document.getElementById('minesBet').innerText = minesBet;
-        document.getElementById('rouletteBet').innerText = rouletteBet;
-        document.getElementById('profName').innerText = pname;
-        document.getElementById('profUser').innerText = user ? '@' + (user.username || user.first_name) : '@player';
-        document.getElementById('profGames').innerText = games;
-        document.getElementById('profTurn').innerText = turnover;
-        document.getElementById('profWins').innerText = wins;
-        document.getElementById('profWr').innerText = games ? ((wins/games)*100).toFixed(1) : '0';
-        const av = document.getElementById('profileAvatar');
-        if (userAvatarUrl) av.innerHTML = `<img src="${userAvatarUrl}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`;
-        else av.innerHTML = pname.charAt(0).toUpperCase();
-    }
-    
-    function refreshBalance() { socket.emit('get_balance', uid, (d) => { if(d){ stars=d.stars; turnover=d.turnover||0; games=d.games_played||0; wins=d.wins||0; updateUI(); } }); }
-    
-    socket.emit('register', { telegram_id: uid, name: pname, avatar: userAvatarUrl || pname.charAt(0) }, (res) => { if(res?.success) { stars = res.stars; updateUI(); } });
-    
-    function getAvatarHtml(av, name) {
-        if(av && av.startsWith('http')) return `<img src="${av}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`;
-        else return `<span style="font-size:18px;font-weight:bold;">${name ? name.charAt(0).toUpperCase() : '?'}</span>`;
-    }
-    
-    function renderBets() {
-        const cont = document.getElementById('crashBets');
-        if(!cont) return;
-        if(!betsList.length) { cont.innerHTML = '<div class="empty">Нет ставок</div>'; return; }
-        cont.innerHTML = betsList.map(b => `<div class="bet-item"><span><div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#f59e0b,#ef4444);display:inline-flex;align-items:center;justify-content:center;margin-right:8px;overflow:hidden;">${getAvatarHtml(b.avatar, b.name)}</div>${b.name}</span><span>⭐ ${b.amount}</span>${b.cashedAt ? `<span style="color:#00e699;">✅ ${b.cashedAt.toFixed(2)}x</span>` : '<span style="color:#f59e0b;">⏳</span>'}</div>`).join('');
-    }
+<!-- Вставь этот блок в раздел mines (замени старый) -->
+<div id="mines" class="screen">
+    <div class="widget">
+        <div class="panel-label">Ставка</div>
+        <div class="panel-value">⭐ <span id="minesBet">20</span></div>
+        <div class="preset-row">
+            <div class="preset" onclick="minesBetAdj('half')">½</div>
+            <div class="preset" onclick="minesBetAdj('double')">×2</div>
+            <div class="preset" onclick="minesBetAdj('max')">MAX</div>
+        </div>
+        <div class="auto-row" style="justify-content: space-between; margin-top: 8px;">
+            <span class="auto-label">💣 Количество мин</span>
+            <select id="minesCountSelect" style="background:#0a1128; color:white; padding:6px 12px; border-radius:20px; border:1px solid #2a3450;">
+                <option value="3">3 мины (легко)</option>
+                <option value="5">5 мин</option>
+                <option value="8">8 мин</option>
+                <option value="10">10 мин</option>
+                <option value="12">12 мин</option>
+                <option value="15">15 мин</option>
+                <option value="18">18 мин</option>
+                <option value="20">20 мин</option>
+                <option value="22">22 мины</option>
+                <option value="24">24 мины (экстрим)</option>
+            </select>
+        </div>
+        <div class="btn" id="minesBtn" onclick="minesClick()">💣 Новая игра</div>
+    </div>
+    <div class="mines-grid" id="minesBoard"></div>
+    <div style="text-align: center; margin: 8px 0;">
+        <span style="color:#6b7c96;">Множитель: </span>
+        <span id="minesMult" style="font-size: 24px; font-weight: 800; color: #ffaa00;">1.00x</span>
+    </div>
+    <div class="btn" id="minesCash" disabled onclick="minesCashout()" style="background: #2a3448;">💰 Забрать выигрыш</div>
+    <div style="margin-top: 8px; font-size: 11px; color: #6b7c96; text-align: center;">
+        ⭐ Чем больше мин, тем выше множитель, но сложнее выиграть
+    </div>
+</div>
     
     // ========== ROCKET ACTIONS ==========
     function updateButtonUI() {
