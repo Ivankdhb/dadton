@@ -73,11 +73,11 @@
         .rank-2 { color: #c0c0c0; }
         .rank-3 { color: #cd7f32; }
         .leader-info { display: flex; align-items: center; gap: 12px; flex: 1; }
-        .leader-avatar { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; background: linear-gradient(135deg, #f59e0b, #ef4444); }
+        .leader-avatar { width: 40px; height: 40px; border-radius: 50%; background-size: cover; background-position: center; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: bold; background: linear-gradient(135deg, #f59e0b, #ef4444); }
         .leader-name { font-weight: 600; }
         .leader-score { color: #ffaa00; font-weight: 700; }
         
-        .profile-avatar { width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 40px; margin: 0 auto 12px; background: linear-gradient(135deg, #f59e0b, #ef4444); }
+        .profile-avatar { width: 80px; height: 80px; border-radius: 50%; background-size: cover; background-position: center; display: flex; align-items: center; justify-content: center; font-size: 36px; margin: 0 auto 12px; background: linear-gradient(135deg, #f59e0b, #ef4444); }
         .profile-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
         .stat-card { background: #1e295d; border-radius: 16px; padding: 12px; text-align: center; }
         
@@ -97,6 +97,8 @@
         .roulette-container { display: flex; justify-content: center; margin: 20px 0; }
         .roulette-wheel { width: 200px; height: 200px; border-radius: 50%; position: relative; transition: transform 3s cubic-bezier(0.2, 0.8, 0.3, 1); }
         .roulette-pointer { position: absolute; top: -20px; left: 50%; transform: translateX(-50%); font-size: 30px; filter: drop-shadow(0 0 5px black); z-index: 10; }
+        
+        .avatar-img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
     </style>
 </head>
 <body>
@@ -238,12 +240,33 @@
     const uid = user ? user.id.toString() : 'p' + Math.floor(Math.random() * 1000000);
     const pname = user ? (user.first_name + (user.last_name ? ' ' + user.last_name : '')) : 'Игрок';
     
-    // Аватарка из Telegram
-    let userAvatar = '👤';
+    // ПОЛУЧАЕМ РЕАЛЬНУЮ АВАТАРКУ ИЗ TELEGRAM
+    let userAvatarUrl = '';
+    let userAvatarText = '👤';
+    
     if (user?.photo_url) {
-        userAvatar = '🖼️';
+        // Если есть фото — используем URL
+        userAvatarUrl = user.photo_url;
+        userAvatarText = '';
     } else if (user?.first_name) {
-        userAvatar = user.first_name.charAt(0).toUpperCase();
+        // Если нет фото — используем первую букву имени
+        userAvatarText = user.first_name.charAt(0).toUpperCase();
+        userAvatarUrl = '';
+    } else {
+        userAvatarText = '👤';
+        userAvatarUrl = '';
+    }
+    
+    // Функция для отображения аватарки в HTML
+    function getAvatarHtml(avatarData, name) {
+        if (avatarData && avatarData.startsWith('http')) {
+            return `<img src="${avatarData}" class="avatar-img" onerror="this.style.display='none'; this.parentElement.innerHTML='${name ? name.charAt(0).toUpperCase() : '?'}'">`;
+        } else if (avatarData && avatarData.length === 1 && avatarData !== '👤') {
+            return `<span style="font-size: 18px; font-weight: bold;">${avatarData}</span>`;
+        } else {
+            const letter = name ? name.charAt(0).toUpperCase() : '?';
+            return `<span style="font-size: 18px; font-weight: bold;">${letter}</span>`;
+        }
     }
     
     let stars = 1000, turnover = 0, games = 0, wins = 0;
@@ -268,7 +291,15 @@
         document.getElementById('rouletteBet').innerText = rouletteBet;
         document.getElementById('profName').innerText = pname;
         document.getElementById('profUser').innerText = user ? ('@' + (user.username || user.first_name)) : '@player';
-        document.getElementById('profileAvatar').innerHTML = userAvatar;
+        
+        // Обновляем аватарку в профиле
+        const profileAvatar = document.getElementById('profileAvatar');
+        if (userAvatarUrl) {
+            profileAvatar.innerHTML = `<img src="${userAvatarUrl}" class="avatar-img" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`;
+        } else {
+            profileAvatar.innerHTML = userAvatarText || (pname ? pname.charAt(0).toUpperCase() : '👤');
+        }
+        
         document.getElementById('profGames').innerText = games;
         document.getElementById('profTurn').innerText = turnover;
         document.getElementById('profWins').innerText = wins;
@@ -280,7 +311,8 @@
         socket.emit('get_balance', uid, (d) => { if (d) { stars = d.stars; turnover = d.turnover || 0; games = d.games_played || 0; wins = d.wins || 0; updateUI(); } });
     }
     
-    socket.emit('register', { telegram_id: uid, name: pname, avatar: userAvatar }, (res) => { if (res?.success) { stars = res.stars; updateUI(); } });
+    // Регистрация с передачей аватарки
+    socket.emit('register', { telegram_id: uid, name: pname, avatar: userAvatarUrl || userAvatarText }, (res) => { if (res?.success) { stars = res.stars; updateUI(); } });
     
     function toggleAutoCashout() {
         if (hasActiveBet) {
@@ -340,14 +372,12 @@
         
         btn.classList.remove('btn-cancel', 'btn-cashout', 'btn-disabled');
         
-        // Если нет активной ставки и раунд не активен (ожидание ставок)
         if (!hasActiveBet && !crashActive && rocketStateCountdown === -1) {
             btn.innerText = "💰 Сделать ставку";
             btn.style.pointerEvents = "auto";
             btn.style.opacity = "1";
             btn.disabled = false;
         }
-        // Если есть ставка и идёт обратный отсчёт
         else if (hasActiveBet && isCountdown && !crashActive) {
             btn.innerText = "❌ Отмена";
             btn.classList.add('btn-cancel');
@@ -355,7 +385,6 @@
             btn.style.opacity = "1";
             btn.disabled = false;
         }
-        // Если есть ставка и ракета летит
         else if (hasActiveBet && crashActive) {
             btn.innerText = "💸 Забрать";
             btn.classList.add('btn-cashout');
@@ -363,7 +392,6 @@
             btn.style.opacity = "1";
             btn.disabled = false;
         }
-        // Остальные случаи — кнопка неактивна
         else {
             btn.innerText = "⏳ Ожидание";
             btn.classList.add('btn-disabled');
@@ -403,7 +431,7 @@
         btn.disabled = true;
         btn.innerText = "⏳ Обработка...";
         
-        socket.emit('rocket_place_bet', { telegram_id: uid, name: pname, amount: crashBet, autoCashout: autoCashoutValue, avatar: userAvatar }, (res) => {
+        socket.emit('rocket_place_bet', { telegram_id: uid, name: pname, amount: crashBet, autoCashout: autoCashoutValue, avatar: userAvatarUrl || userAvatarText }, (res) => {
             btn.disabled = false;
             if (res?.success) {
                 hasActiveBet = true;
@@ -427,7 +455,10 @@
         const cont = document.getElementById('crashBets');
         if (!cont) return;
         if (!crashBets.length) { cont.innerHTML = '<div class="empty">Нет ставок</div>'; return; }
-        cont.innerHTML = crashBets.map(b => `<div class="bet-item"><span><div style="width:28px; height:28px; background:linear-gradient(135deg,#f59e0b,#ef4444); border-radius:50%; display:inline-flex; align-items:center; justify-content:center; margin-right:8px; font-size:14px;">${b.avatar || '👤'}</div>${b.name}</span><span>⭐ ${b.amount}</span>${b.cashedAt ? `<span style="color:#00e699;">✅ ${b.cashedAt.toFixed(2)}x</span>` : '<span style="color:#f59e0b;">⏳</span>'}</div>`).join('');
+        cont.innerHTML = crashBets.map(b => {
+            const avatarHtml = getAvatarHtml(b.avatar, b.name);
+            return `<div class="bet-item"><span><div style="width:28px; height:28px; border-radius:50%; background:linear-gradient(135deg,#f59e0b,#ef4444); display:inline-flex; align-items:center; justify-content:center; margin-right:8px; overflow:hidden;">${avatarHtml}</div>${b.name}</span><span>⭐ ${b.amount}</span>${b.cashedAt ? `<span style="color:#00e699;">✅ ${b.cashedAt.toFixed(2)}x</span>` : '<span style="color:#f59e0b;">⏳</span>'}</div>`;
+        }).join('');
     }
     
     socket.on('rocket_countdown', (s) => { 
@@ -619,7 +650,7 @@
     function placeRoulette() {
         if (rouletteSpinning) { toast("Рулетка крутится"); return; }
         if (stars < rouletteBet) { toast("Не хватает звёзд"); return; }
-        socket.emit('roulette_place_bet', { telegram_id: uid, name: pname, amount: rouletteBet, avatar: userAvatar }, (res) => { if (res?.success) refreshBalance(); else toast(res?.error); });
+        socket.emit('roulette_place_bet', { telegram_id: uid, name: pname, amount: rouletteBet, avatar: userAvatarUrl || userAvatarText }, (res) => { if (res?.success) refreshBalance(); else toast(res?.error); });
     }
     
     function spinRoulette() { if (rouletteSpinning) { toast("Рулетка уже крутится"); return; } if (rouletteBets.length === 0) { toast("Нет ставок"); return; } socket.emit('roulette_spin'); }
@@ -631,7 +662,10 @@
         const total = rouletteBets.reduce((s, b) => s + b.amount, 0);
         if (totalSpan) totalSpan.innerText = `Общая ставка: ${total}⭐`;
         if (!rouletteBets.length) { cont.innerHTML = '<div class="empty">Нет ставок</div>'; return; }
-        cont.innerHTML = rouletteBets.map(b => `<div class="bet-item"><span><div style="width:28px; height:28px; background:linear-gradient(135deg,#f59e0b,#ef4444); border-radius:50%; display:inline-flex; align-items:center; justify-content:center; margin-right:8px; font-size:14px;">${b.avatar || '👤'}</div>${b.name}</span><span>⭐ ${b.amount}</span><span style="color:#00e699;">шанс ${total ? ((b.amount / total) * 100).toFixed(1) : 0}%</span></div>`).join('');
+        cont.innerHTML = rouletteBets.map(b => {
+            const avatarHtml = getAvatarHtml(b.avatar, b.name);
+            return `<div class="bet-item"><span><div style="width:28px; height:28px; border-radius:50%; background:linear-gradient(135deg,#f59e0b,#ef4444); display:inline-flex; align-items:center; justify-content:center; margin-right:8px; overflow:hidden;">${avatarHtml}</div>${b.name}</span><span>⭐ ${b.amount}</span><span style="color:#00e699;">шанс ${total ? ((b.amount / total) * 100).toFixed(1) : 0}%</span></div>`;
+        }).join('');
     }
     
     function drawRouletteWheel() {
@@ -663,7 +697,14 @@
     socket.on('leaderboard_data', (data) => {
         const cont = document.getElementById('leaderboardList');
         if (!data || !data.length) { cont.innerHTML = '<div class="empty">🏆 Таблица лидеров пуста</div>'; return; }
-        cont.innerHTML = data.slice(0, 50).map((u, i) => { let rankClass = ''; let rankNum = i+1; if (rankNum === 1) rankClass = 'rank-1'; else if (rankNum === 2) rankClass = 'rank-2'; else if (rankNum === 3) rankClass = 'rank-3'; return `<div class="leader-item"><div class="leader-rank ${rankClass}">${rankNum}</div><div class="leader-info"><div class="leader-avatar">${u.avatar || '🎲'}</div><div class="leader-name">${u.name}</div></div><div class="leader-score">⭐ ${u.turnover}</div></div>`; }).join('');
+        cont.innerHTML = data.slice(0, 50).map((u, i) => {
+            let rankClass = ''; let rankNum = i+1;
+            if (rankNum === 1) rankClass = 'rank-1';
+            else if (rankNum === 2) rankClass = 'rank-2';
+            else if (rankNum === 3) rankClass = 'rank-3';
+            const avatarHtml = getAvatarHtml(u.avatar, u.name);
+            return `<div class="leader-item"><div class="leader-rank ${rankClass}">${rankNum}</div><div class="leader-info"><div class="leader-avatar">${avatarHtml}</div><div class="leader-name">${u.name}</div></div><div class="leader-score">⭐ ${u.turnover}</div></div>`;
+        }).join('');
     });
     
     function tab(name, el) {
@@ -695,10 +736,7 @@
     document.getElementById('autoCashoutToggle').checked = false;
     toggleAutoCashout();
     
-    // Инициализация состояния кнопки
-    setTimeout(() => {
-        updateButtonState();
-    }, 500);
+    setTimeout(() => { updateButtonState(); }, 500);
 </script>
 </body>
 </html>
