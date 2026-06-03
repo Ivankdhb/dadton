@@ -57,12 +57,26 @@
         input:checked + .auto-slider:before { transform: translateX(26px); }
         .auto-value-input { background: #0a1128; border: 1px solid #2a3450; color: #ffaa00; padding: 8px 12px; border-radius: 30px; width: 80px; text-align: center; font-weight: 700; }
         
-        /* МИНЫ - поле 5x5 */
+        /* МИНЫ - мягкие знаки */
         .mines-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin: 16px 0; }
-        .mine-cell { aspect-ratio: 1; background: linear-gradient(135deg, #1e295d, #162045); border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 32px; font-weight: 700; cursor: pointer; transition: all 0.1s ease; box-shadow: 0 4px 10px rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.05); }
+        .mine-cell { 
+            aspect-ratio: 1; 
+            background: linear-gradient(135deg, #1e295d, #162045); 
+            border-radius: 16px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            font-size: 28px; 
+            font-weight: 400; 
+            color: #8b9dc3; 
+            cursor: pointer; 
+            transition: all 0.1s ease; 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.05);
+        }
         .mine-cell:active { transform: scale(0.95); }
-        .mine-cell.revealed-safe { background: linear-gradient(135deg, #00e699, #00b377); cursor: default; }
-        .mine-cell.revealed-mine { background: linear-gradient(135deg, #ff4d73, #cc0033); cursor: default; }
+        .mine-cell.revealed-safe { background: linear-gradient(135deg, #00e699, #00b377); color: white; }
+        .mine-cell.revealed-mine { background: linear-gradient(135deg, #ff4d73, #cc0033); color: white; }
         .mine-cell.revealed { cursor: default; }
         
         /* ЛИДЕРЫ */
@@ -151,7 +165,7 @@
     <div class="bets-container" id="crashBets"></div>
 </div>
 
-<!-- МИНЫ 5x5 (ИСПРАВЛЕННЫЕ) -->
+<!-- МИНЫ 5x5 (ИСПРАВЛЕННЫЕ - ОДНА КНОПКА, МЯГКИЕ ЗНАКИ) -->
 <div id="mines" class="screen">
     <div class="widget">
         <div class="panel-label">Ставка</div>
@@ -183,10 +197,11 @@
                 <option value="24">24 мины (x9.87)</option>
             </select>
         </div>
+        <!-- ЕДИНСТВЕННАЯ КНОПКА -->
         <div class="btn" id="minesBtn" onclick="minesClick()" style="margin-top: 12px;">💣 Новая игра</div>
     </div>
     
-    <!-- ПОЛЕ 5x5 -->
+    <!-- ПОЛЕ 5x5 (мягкий знак - точка) -->
     <div class="mines-grid" id="minesBoard"></div>
     
     <!-- МНОЖИТЕЛЬ -->
@@ -194,9 +209,6 @@
         <span style="color:#6b7c96;">Множитель: </span>
         <span id="minesMult" style="font-size: 28px; font-weight: 800; color: #ffaa00;">1.00x</span>
     </div>
-    
-    <!-- ОДНА КНОПКА ЗАБРАТЬ -->
-    <div class="btn" id="minesCash" disabled onclick="minesCashout()" style="background: #2a3448;">💰 Забрать выигрыш</div>
     
     <div style="margin-top: 8px; font-size: 11px; color: #6b7c96; text-align: center;">
         ⭐ Открывайте клетки. Чем больше мин, тем выше множитель
@@ -467,7 +479,7 @@
     });
     socket.emit('rocket_get_history');
     
-    // ========== МИНЫ (ИСПРАВЛЕННЫЕ) ==========
+    // ========== МИНЫ ==========
     function minesBetAdj(type) {
         if (minesActive) { toast("Нельзя менять ставку во время игры!"); return; }
         if (type === 'half') minesBet = Math.floor(minesBet / 2);
@@ -501,9 +513,8 @@
                 document.getElementById('minesMult').innerText = '1.00x';
                 document.getElementById('minesBtn').innerText = "💰 Забрать";
                 document.getElementById('minesBtn').classList.add('btn-cashout');
-                document.getElementById('minesCash').disabled = false;
-                renderMinesBoard(true);
                 refreshBalance();
+                renderMinesBoard(true);
                 toast(`💣 Игра началась! ${minesCount} мин. Удачи!`);
             } else toast(res?.error || 'Ошибка');
         });
@@ -524,7 +535,6 @@
                 renderMinesBoard(false);
                 document.getElementById('minesBtn').innerText = "💣 Новая игра";
                 document.getElementById('minesBtn').classList.remove('btn-cashout');
-                document.getElementById('minesCash').disabled = true;
                 refreshBalance();
                 return;
             }
@@ -536,12 +546,13 @@
                 if (cell) { cell.innerHTML = '⭐'; cell.classList.add('revealed-safe', 'revealed'); }
                 if (res.finished) {
                     toast(`🎉 ПОБЕДА! Вы выиграли ${minesCurrentWinAmount} звёзд!`);
+                    gameHistory.unshift({ game: 'Мины', amount: minesCurrentWinAmount, time: new Date().toLocaleTimeString() });
+                    if (gameHistory.length > 10) gameHistory.pop();
                     minesActive = false;
                     minesGridActive = false;
                     renderMinesBoard(false);
                     document.getElementById('minesBtn').innerText = "💣 Новая игра";
                     document.getElementById('minesBtn').classList.remove('btn-cashout');
-                    document.getElementById('minesCash').disabled = true;
                     refreshBalance();
                 }
             }
@@ -553,12 +564,13 @@
         socket.emit('mines_cashout', { telegram_id: uid }, (res) => {
             if (res?.success) {
                 toast(`💰 Вы вышли с выигрышем ${res.winAmount} звёзд!`);
+                gameHistory.unshift({ game: 'Мины', amount: res.winAmount, time: new Date().toLocaleTimeString() });
+                if (gameHistory.length > 10) gameHistory.pop();
                 minesActive = false;
                 minesGridActive = false;
                 renderMinesBoard(false);
                 document.getElementById('minesBtn').innerText = "💣 Новая игра";
                 document.getElementById('minesBtn').classList.remove('btn-cashout');
-                document.getElementById('minesCash').disabled = true;
                 refreshBalance();
             } else toast(res?.error || 'Ошибка');
         });
@@ -570,10 +582,14 @@
         for (let i = 0; i < 25; i++) {
             const cell = document.createElement('div');
             cell.className = 'mine-cell';
-            cell.innerHTML = '❓';
+            cell.innerHTML = '◌'; // мягкий знак (точка)
             cell.setAttribute('data-idx', i);
-            if (active) cell.onclick = (function(idx) { return function() { revealMineCell(idx); }; })(i);
-            else { cell.style.opacity = '0.5'; cell.style.cursor = 'not-allowed'; }
+            if (active) {
+                cell.onclick = (function(idx) { return function() { revealMineCell(idx); }; })(i);
+            } else {
+                cell.style.opacity = '0.5';
+                cell.style.cursor = 'not-allowed';
+            }
             board.appendChild(cell);
         }
     }
