@@ -21,7 +21,7 @@
         }
         .header {
             display: flex;
-            justify-content: flex-end;
+            justify-content: space-between;
             padding: 12px 16px;
             background: #0a1128;
             border-bottom: 1px solid rgba(255,255,255,0.05);
@@ -44,7 +44,6 @@
             -webkit-background-clip: text;
             background-clip: text;
             color: transparent;
-            text-shadow: 0 0 30px rgba(255,215,0,0.3);
         }
         .screen {
             display: none;
@@ -226,7 +225,6 @@
             margin-bottom: 4px;
         }
         
-        /* Автовывод */
         .auto-card {
             background: linear-gradient(135deg, #1a1f3a, #0f1228);
             border-radius: 20px;
@@ -304,7 +302,6 @@
             display: none;
         }
         
-        /* Мины */
         .mines-grid {
             display: grid;
             grid-template-columns: repeat(5, 1fr);
@@ -323,20 +320,17 @@
             cursor: pointer;
             transition: all 0.1s ease;
             box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-            border: 1px solid rgba(255,255,255,0.05);
         }
         .mine-cell:active {
             transform: scale(0.95);
         }
         .mine-cell.revealed-safe {
             background: linear-gradient(135deg, #00e699, #00b377);
-            box-shadow: 0 0 15px rgba(0,230,153,0.3);
         }
         .mine-cell.revealed-mine {
             background: linear-gradient(135deg, #ff4d73, #cc0033);
         }
         
-        /* Лидерборд */
         .leaderboard-list {
             display: flex;
             flex-direction: column;
@@ -357,7 +351,6 @@
         }
         .rank-1 {
             color: #ffd700;
-            text-shadow: 0 0 5px rgba(255,215,0,0.5);
         }
         .rank-2 {
             color: #c0c0c0;
@@ -389,7 +382,6 @@
             font-weight: 700;
         }
         
-        /* Профиль */
         .profile-avatar {
             width: 80px;
             height: 80px;
@@ -414,7 +406,6 @@
             text-align: center;
         }
         
-        /* Рефералы */
         .ref-stats {
             display: flex;
             gap: 12px;
@@ -477,7 +468,6 @@
             color: #ff4d73;
         }
         
-        /* Рулетка круг */
         .roulette-container {
             display: flex;
             justify-content: center;
@@ -489,7 +479,6 @@
             border-radius: 50%;
             position: relative;
             transition: transform 3s cubic-bezier(0.2, 0.8, 0.3, 1);
-            box-shadow: 0 0 20px rgba(0,0,0,0.5);
         }
         .roulette-pointer {
             position: absolute;
@@ -499,14 +488,6 @@
             font-size: 30px;
             filter: drop-shadow(0 0 5px black);
             z-index: 10;
-        }
-        .roulette-segment {
-            position: absolute;
-            width: 0;
-            height: 0;
-            top: 50%;
-            left: 50%;
-            transform-origin: 0% 0%;
         }
     </style>
 </head>
@@ -535,6 +516,7 @@
     </div>
 </div>
 
+<!-- Остальные экраны -->
 <div id="crash" class="screen">
     <div class="crash-display">
         <div class="multiplier" id="crashMult">1.00x</div>
@@ -549,7 +531,6 @@
             <div class="preset" onclick="bet('add')">+10</div>
             <div class="preset" onclick="bet('max')">MAX</div>
         </div>
-        
         <div class="auto-card">
             <div class="auto-row">
                 <div class="auto-row-left">
@@ -565,12 +546,11 @@
                 </div>
             </div>
         </div>
-        
         <div class="btn" id="crashBtn" onclick="crashClick()">💰 Сделать ставку</div>
     </div>
     <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
         <span>👥 Участники</span>
-        <span id="crashStatus" class="status-wait">● Ожидание ставок</span>
+        <span id="crashStatus">● Ожидание ставок</span>
     </div>
     <div class="bets-container" id="crashBets"></div>
 </div>
@@ -660,94 +640,14 @@
     let referralCount = 0;
     let referralEarned = 0;
     
-    // Ракета
     let crashBet = 10, crashActive = false, crashMyBet = null, crashBets = [], currentMultiplier = 1;
     let autoCashoutEnabled = false;
     let autoCashoutValue = 1.5;
     let crashHistoryData = [];
     
-    // Мины
-    let minesBet = 20, minesActive = false, minesRevealed = 0, minesCount = 5, minesBetAmount = 0, minesMult = 1;
-    // Рулетка
+    let minesBet = 20, minesActive = false, minesRevealed = 0, minesBetAmount = 0, minesMult = 1;
     let rouletteBet = 10, rouletteBets = [], rouletteSpinning = false;
-    let rouletteCanvas = null, rouletteCtx = null;
-    let rouletteSegments = ['⚡', '⭐', '🎲', '💎', '🎯', '🏆', '💰', '🍀'];
-    let rouletteRotation = 0;
-    // История игр
     let gameHistory = [];
-    
-    function initRouletteCanvas() {
-        const canvas = document.getElementById('rouletteCanvas');
-        if (!canvas) return;
-        rouletteCtx = canvas.getContext('2d');
-        drawRouletteWheel(0);
-    }
-    
-    function drawRouletteWheel(rotation) {
-        if (!rouletteCtx) return;
-        const canvas = document.getElementById('rouletteCanvas');
-        const ctx = rouletteCtx;
-        const size = 200;
-        const centerX = size / 2;
-        const centerY = size / 2;
-        const radius = size / 2 - 5;
-        const segmentCount = rouletteSegments.length;
-        const angleStep = (Math.PI * 2) / segmentCount;
-        
-        ctx.clearRect(0, 0, size, size);
-        
-        for (let i = 0; i < segmentCount; i++) {
-            const startAngle = i * angleStep + rotation;
-            const endAngle = (i + 1) * angleStep + rotation;
-            
-            ctx.beginPath();
-            ctx.moveTo(centerX, centerY);
-            ctx.arc(centerX, centerY, radius, startAngle, endAngle);
-            ctx.fillStyle = i % 2 === 0 ? '#ff5277' : '#ffaa00';
-            ctx.fill();
-            ctx.strokeStyle = '#fff';
-            ctx.lineWidth = 2;
-            ctx.stroke();
-            
-            ctx.save();
-            ctx.translate(centerX, centerY);
-            ctx.rotate(startAngle + angleStep / 2);
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.font = 'bold 24px sans-serif';
-            ctx.fillStyle = '#fff';
-            ctx.fillText(rouletteSegments[i], radius * 0.7, 0);
-            ctx.restore();
-        }
-        
-        ctx.beginPath();
-        ctx.arc(centerX, centerY, 15, 0, Math.PI * 2);
-        ctx.fillStyle = '#1e295d';
-        ctx.fill();
-        ctx.strokeStyle = '#ffaa00';
-        ctx.lineWidth = 3;
-        ctx.stroke();
-    }
-    
-    function animateRoulette(finalRotation) {
-        const startTime = Date.now();
-        const duration = 3000;
-        const startRotation = rouletteRotation;
-        
-        function animate() {
-            const elapsed = Date.now() - startTime;
-            const progress = Math.min(1, elapsed / duration);
-            const easeOut = 1 - Math.pow(1 - progress, 3);
-            const currentRotation = startRotation + (finalRotation - startRotation) * easeOut;
-            drawRouletteWheel(currentRotation);
-            if (progress < 1) {
-                requestAnimationFrame(animate);
-            } else {
-                rouletteRotation = finalRotation % (Math.PI * 2);
-            }
-        }
-        animate();
-    }
     
     function toast(msg) {
         const t = document.getElementById('toast');
@@ -763,7 +663,7 @@
         document.getElementById('rouletteBet').innerText = rouletteBet;
         document.getElementById('profName').innerText = pname;
         document.getElementById('profUser').innerText = '@' + pname;
-        document.getElementById('profAvatar').innerHTML = userAvatar;
+        document.getElementById('profileAvatar').innerHTML = userAvatar;
         document.getElementById('profGames').innerText = games;
         document.getElementById('profTurn').innerText = turnover;
         document.getElementById('profWins').innerText = wins;
@@ -797,7 +697,6 @@
         }
     }
     
-    // ========== ПРОФИЛЬ ==========
     function switchSubtab(tab, btn) {
         document.querySelectorAll('.subtab-btn').forEach(b => b.classList.remove('active'));
         if (btn) btn.classList.add('active');
@@ -830,7 +729,6 @@
         }
     }
     
-    // ========== РАКЕТА ==========
     function bet(type) {
         if (crashActive) return;
         if (type === 'min') crashBet = 10;
@@ -882,8 +780,6 @@
             if (el) el.innerHTML = '🚀 В игре';
             if (statusDiv) statusDiv.style.display = 'none';
             if (multDiv) multDiv.style.display = 'block';
-        } else {
-            if (el && !crashActive) el.innerHTML = '● Ожидание ставок';
         }
     });
     
@@ -915,7 +811,6 @@
             crashMyBet = null;
             refreshBalance();
         }
-        // Добавляем икс в историю (в начало, удаляем последний)
         crashHistoryData.unshift(multiplier.toFixed(2));
         if (crashHistoryData.length > 10) crashHistoryData.pop();
         const historyContainer = document.getElementById('crashHistory');
@@ -955,7 +850,6 @@
         renderCrashBets(); 
     });
     
-    // ========== МИНЫ (уменьшенные иксы) ==========
     function minesBetAdj(type) {
         if (type === 'half') minesBet = Math.floor(minesBet / 2);
         if (type === 'double') minesBet *= 2;
@@ -1051,7 +945,6 @@
         }
     }
     
-    // ========== РУЛЕТКА ==========
     function rouletteBetAdj(type) {
         if (type === 'min') rouletteBet = 10;
         if (type === 'add') rouletteBet += 10;
@@ -1083,16 +976,55 @@
         cont.innerHTML = rouletteBets.map(b => `<div class="bet-item"><span><div class="leader-avatar" style="width:28px; height:28px; font-size:14px; display:inline-flex; margin-right:8px;">${b.avatar || '👤'}</div>${b.name}</span><span>⭐ ${b.amount}</span><span style="color:#00e699;">шанс ${total ? ((b.amount / total) * 100).toFixed(1) : 0}%</span></div>`).join('');
     }
     
-    function rouletteSpinAnimation() {
-        const randomSpins = 5 + Math.random() * 5;
-        const finalRotation = rouletteRotation + (randomSpins * Math.PI * 2) + (Math.random() * Math.PI * 2);
-        animateRoulette(finalRotation);
+    function drawRouletteWheel() {
+        const canvas = document.getElementById('rouletteCanvas');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        const size = 200;
+        const centerX = size / 2;
+        const centerY = size / 2;
+        const radius = size / 2 - 5;
+        const segments = ['⚡', '⭐', '🎲', '💎', '🎯', '🏆', '💰', '🍀'];
+        const angleStep = (Math.PI * 2) / segments.length;
+        
+        ctx.clearRect(0, 0, size, size);
+        
+        for (let i = 0; i < segments.length; i++) {
+            const startAngle = i * angleStep;
+            const endAngle = (i + 1) * angleStep;
+            
+            ctx.beginPath();
+            ctx.moveTo(centerX, centerY);
+            ctx.arc(centerX, centerY, radius, startAngle, endAngle);
+            ctx.fillStyle = i % 2 === 0 ? '#ff5277' : '#ffaa00';
+            ctx.fill();
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            
+            ctx.save();
+            ctx.translate(centerX, centerY);
+            ctx.rotate(startAngle + angleStep / 2);
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.font = 'bold 24px sans-serif';
+            ctx.fillStyle = '#fff';
+            ctx.fillText(segments[i], radius * 0.7, 0);
+            ctx.restore();
+        }
+        
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, 15, 0, Math.PI * 2);
+        ctx.fillStyle = '#1e295d';
+        ctx.fill();
+        ctx.strokeStyle = '#ffaa00';
+        ctx.lineWidth = 3;
+        ctx.stroke();
     }
     
     socket.on('roulette_update', (b) => { rouletteBets = b; renderRouletteBets(); });
     socket.on('roulette_spinning', () => { 
         rouletteSpinning = true; 
-        rouletteSpinAnimation();
         toast("🎡 Рулетка крутится..."); 
     });
     socket.on('roulette_result', (d) => { 
@@ -1107,7 +1039,6 @@
         refreshBalance(); 
     });
     
-    // ========== ЛИДЕРЫ ==========
     socket.on('leaderboard_data', (data) => {
         const cont = document.getElementById('leaderboardList');
         if (!data || !data.length) { cont.innerHTML = '<div class="empty">🏆 Таблица лидеров пуста</div>'; return; }
@@ -1130,36 +1061,21 @@
         }).join('');
     });
     
-    // ========== НАВИГАЦИЯ ==========
     function tab(name, el) {
         document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
         el.classList.add('active');
         document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
         document.getElementById(name).classList.add('active');
         if (name === 'leaders') socket.emit('get_leaderboard');
-        if (name === 'roulette') initRouletteCanvas();
+        if (name === 'roulette') drawRouletteWheel();
     }
     
     function goTo(game) {
         document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
         document.getElementById(game).classList.add('active');
-        if (game === 'crash') crashHistoryData = []; // очищаем историю, она будет заполняться заново
         if (game === 'mines') renderMinesBoard(false);
-        if (game === 'roulette') initRouletteCanvas();
+        if (game === 'roulette') drawRouletteWheel();
     }
-    
-    // Реферальная система (объяснение)
-    // Как работает: 
-    // 1. У каждого пользователя есть уникальный ID (telegram_id)
-    // 2. Реферальная ссылка содержит этот ID: https://t.me/...?start=ref_123456
-    // 3. Когда новый пользователь переходит по ссылке, бот сохраняет, кто его пригласил
-    // 4. При каждом выигрыше приглашённого, 10% от его оборота зачисляется пригласившему
-    // 5. В профиле отображается количество приглашённых и заработанная сумма
-    
-    // Для реализации на сервере нужно:
-    // - добавить поле referrer_id в таблицу users
-    // - при регистрации проверять ref параметр
-    // - при каждом пополнении оборота начислять 10% рефереру
     
     switchSubtab('refs', document.querySelector('.subtab-btn.active'));
     setInterval(refreshBalance, 3000);
