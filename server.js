@@ -112,9 +112,6 @@ function startRocketFlying() {
             
             db.run(`INSERT INTO rocket_history (multiplier) VALUES (?)`, [rocketState.currentMultiplier]);
             
-            // При краше НЕ списываем ставки — они уже списаны при создании ставки
-            // Только если кто-то не забрал — он просто теряет свою ставку (она уже списана)
-            
             setTimeout(startRocketCountdown, 1500);
         } else {
             io.emit('rocket_multiplier', rocketState.currentMultiplier);
@@ -201,7 +198,6 @@ io.on('connection', (socket) => {
                 return;
             }
             
-            // СПИСЫВАЕМ ТОЛЬКО ОДИН РАЗ — ПРЯМО СЕЙЧАС
             db.run(`UPDATE users SET stars = stars - ?, games_played = games_played + 1 WHERE telegram_id = ?`, [amount, telegram_id]);
             
             rocketState.bets.push({
@@ -468,9 +464,6 @@ server.listen(PORT, () => {
     ╔══════════════════════════════════════╗
     ║   🚀 DADTON СЕРВЕР ЗАПУЩЕН          ║
     ║   http://localhost:${PORT}              ║
-    ║                                      ║
-    ║   ✅ Ставка списывается только 1 раз ║
-    ║   ✅ Аватарки из Telegram            ║
     ╚══════════════════════════════════════╝
     `);
 });
