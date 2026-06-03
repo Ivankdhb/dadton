@@ -21,7 +21,7 @@
         }
         .header {
             display: flex;
-            justify-content: space-between;
+            justify-content: flex-end;
             padding: 12px 16px;
             background: #0a1128;
             border-bottom: 1px solid rgba(255,255,255,0.05);
@@ -632,7 +632,7 @@
     const user = tg?.initDataUnsafe?.user;
     const uid = user ? user.id.toString() : 'p' + Math.floor(Math.random() * 1000000);
     const pname = user ? (user.first_name + (user.last_name ? ' ' + user.last_name : '')) : 'Игрок';
-    // Аватарка из Telegram: фото или первая буква
+    
     let userAvatar = '👤';
     if (user?.photo_url) {
         userAvatar = '🖼️';
@@ -644,14 +644,30 @@
     let referralCount = 0;
     let referralEarned = 0;
     
+    // Ракета
     let crashBet = 10, crashActive = false, crashMyBet = null, crashBets = [], currentMultiplier = 1;
     let autoCashoutEnabled = false;
     let autoCashoutValue = 1.5;
+    // История иксов — FIFO: новые слева, старые удаляются справа
     let crashHistoryData = [];
     
     let minesBet = 20, minesActive = false, minesRevealed = 0, minesBetAmount = 0, minesMult = 1;
     let rouletteBet = 10, rouletteBets = [], rouletteSpinning = false;
     let gameHistory = [];
+    
+    // РЕФЕРАЛЬНАЯ СТАТИСТИКА
+    function loadReferralStats() {
+        socket.emit('get_referral_stats', uid, (data) => {
+            if (data) {
+                referralCount = data.count || 0;
+                referralEarned = data.earned || 0;
+                const refCountEl = document.getElementById('refCount');
+                const refEarnedEl = document.getElementById('refEarned');
+                if (refCountEl) refCountEl.innerText = referralCount;
+                if (refEarnedEl) refEarnedEl.innerText = referralEarned;
+            }
+        });
+    }
     
     function toast(msg) {
         const t = document.getElementById('toast');
@@ -733,6 +749,7 @@
         }
     }
     
+    // ========== РАКЕТА ==========
     function bet(type) {
         if (crashActive) return;
         if (type === 'min') crashBet = 10;
@@ -766,7 +783,7 @@
         const cont = document.getElementById('crashBets');
         if (!cont) return;
         if (!crashBets.length) { cont.innerHTML = '<div class="empty">Нет ставок</div>'; return; }
-        cont.innerHTML = crashBets.map(b => `<div class="bet-item"><span><div class="leader-avatar" style="width:28px; height:28px; font-size:14px; display:inline-flex; margin-right:8px;">${b.avatar || '👤'}</div>${b.name}</span><span>⭐ ${b.amount}</span>${b.cashedAt ? `<span style="color:#00e699;">✅ ${b.cashedAt.toFixed(2)}x</span>` : '<span style="color:#f59e0b;">⏳</span>'}</div>`).join('');
+        cont.innerHTML = crashBets.map(b => `<div class="bet-item"><span><div style="width:28px; height:28px; background:linear-gradient(135deg,#f59e0b,#ef4444); border-radius:50%; display:inline-flex; align-items:center; justify-content:center; margin-right:8px;">${b.avatar || '👤'}</div>${b.name}</span><span>⭐ ${b.amount}</span>${b.cashedAt ? `<span style="color:#00e699;">✅ ${b.cashedAt.toFixed(2)}x</span>` : '<span style="color:#f59e0b;">⏳</span>'}</div>`).join('');
     }
     
     socket.on('rocket_countdown', (s) => { 
@@ -815,7 +832,9 @@
             crashMyBet = null;
             refreshBalance();
         }
+        // ДОБАВЛЯЕМ НОВЫЙ ИКС В НАЧАЛО (слева)
         crashHistoryData.unshift(multiplier.toFixed(2));
+        // ОГРАНИЧИВАЕМ МАКСИМУМ 10
         if (crashHistoryData.length > 10) crashHistoryData.pop();
         const historyContainer = document.getElementById('crashHistory');
         if (historyContainer) {
@@ -854,6 +873,7 @@
         renderCrashBets(); 
     });
     
+    // ========== МИНЫ ==========
     function minesBetAdj(type) {
         if (type === 'half') minesBet = Math.floor(minesBet / 2);
         if (type === 'double') minesBet *= 2;
@@ -949,6 +969,7 @@
         }
     }
     
+    // ========== РУЛЕТКА ==========
     function rouletteBetAdj(type) {
         if (type === 'min') rouletteBet = 10;
         if (type === 'add') rouletteBet += 10;
@@ -977,7 +998,7 @@
         const total = rouletteBets.reduce((s, b) => s + b.amount, 0);
         if (totalSpan) totalSpan.innerText = `Общая ставка: ${total}⭐`;
         if (!rouletteBets.length) { cont.innerHTML = '<div class="empty">Нет ставок</div>'; return; }
-        cont.innerHTML = rouletteBets.map(b => `<div class="bet-item"><span><div class="leader-avatar" style="width:28px; height:28px; font-size:14px; display:inline-flex; margin-right:8px;">${b.avatar || '👤'}</div>${b.name}</span><span>⭐ ${b.amount}</span><span style="color:#00e699;">шанс ${total ? ((b.amount / total) * 100).toFixed(1) : 0}%</span></div>`).join('');
+        cont.innerHTML = rouletteBets.map(b => `<div class="bet-item"><span><div style="width:28px; height:28px; background:linear-gradient(135deg,#f59e0b,#ef4444); border-radius:50%; display:inline-flex; align-items:center; justify-content:center; margin-right:8px;">${b.avatar || '👤'}</div>${b.name}</span><span>⭐ ${b.amount}</span><span style="color:#00e699;">шанс ${total ? ((b.amount / total) * 100).toFixed(1) : 0}%</span></div>`).join('');
     }
     
     function drawRouletteWheel() {
@@ -1043,6 +1064,7 @@
         refreshBalance(); 
     });
     
+    // ========== ЛИДЕРЫ ==========
     socket.on('leaderboard_data', (data) => {
         const cont = document.getElementById('leaderboardList');
         if (!data || !data.length) { cont.innerHTML = '<div class="empty">🏆 Таблица лидеров пуста</div>'; return; }
@@ -1065,6 +1087,7 @@
         }).join('');
     });
     
+    // ========== НАВИГАЦИЯ ==========
     function tab(name, el) {
         document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
         el.classList.add('active');
@@ -1081,22 +1104,24 @@
         if (game === 'roulette') drawRouletteWheel();
     }
     
-    // Получаем реферальную статистику с сервера
-    socket.emit('get_referral_stats', uid, (data) => {
-        if (data) {
-            referralCount = data.count || 0;
-            referralEarned = data.earned || 0;
-            const refCountEl = document.getElementById('refCount');
-            const refEarnedEl = document.getElementById('refEarned');
-            if (refCountEl) refCountEl.innerText = referralCount;
-            if (refEarnedEl) refEarnedEl.innerText = referralEarned;
-        }
-    });
-    
+    loadReferralStats();
     switchSubtab('refs', document.querySelector('.subtab-btn.active'));
     setInterval(refreshBalance, 3000);
     updateUI();
     toggleAutoCashout();
+    
+    // Загружаем историю иксов при запуске
+    socket.on('rocket_history_data', (d) => {
+        if (d && d.length) {
+            crashHistoryData = d.map(item => item.multiplier.toFixed(2));
+            if (crashHistoryData.length > 10) crashHistoryData = crashHistoryData.slice(0, 10);
+            const historyContainer = document.getElementById('crashHistory');
+            if (historyContainer) {
+                historyContainer.innerHTML = crashHistoryData.map(m => `<div class="history-item">${m}x</div>`).join('');
+            }
+        }
+    });
+    socket.emit('rocket_get_history');
 </script>
 </body>
 </html>
