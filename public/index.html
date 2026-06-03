@@ -86,6 +86,8 @@
             transition: 0.1s;
         }
         .btn:active { transform: scale(0.98); }
+        .btn-cancel { background: #ef4444; color: white; }
+        .btn-cancel:hover { background: #dc2626; }
         .btn-cashout { background: #00e699; color: black; }
         .btn-waiting { background: #2a3448; color: #6b7c96; cursor: not-allowed; pointer-events: none; }
         .preset-row {
@@ -413,6 +415,7 @@
     let stars = 1000, turnover = 0, games = 0, wins = 0;
     let referralCount = 0, referralEarned = 0;
     let hasActiveBet = false;
+    let isCountdown = false;
     
     let crashBet = 10, crashActive = false, crashMyBet = null, crashBets = [], currentMultiplier = 1;
     let autoCashoutEnabled = false, autoCashoutValue = 1.5;
@@ -446,7 +449,6 @@
     socket.emit('register', { telegram_id: uid, name: pname, avatar: userAvatar }, (res) => { if (res?.success) { stars = res.stars; updateUI(); } });
     
     function toggleAutoCashout() {
-        // Можно менять настройки, только если у игрока НЕТ активной ставки в этом раунде
         if (hasActiveBet) {
             toast("Нельзя менять настройки после ставки в этом раунде!");
             document.getElementById('autoCashoutToggle').checked = autoCashoutEnabled;
@@ -483,7 +485,10 @@
     }
     
     function crashClick() { 
-        if (crashActive && hasActiveBet && crashMyBet && !crashMyBet.cashed) {
+        if (isCountdown && hasActiveBet) {
+            // Отмена ставки во время обратного отсчёта
+            cancelBet();
+        } else if (crashActive && hasActiveBet && crashMyBet && !crashMyBet.cashed) {
             cashoutCrash();
         } else if (!crashActive && !hasActiveBet) {
             placeCrash();
@@ -492,6 +497,16 @@
         } else if (hasActiveBet && crashMyBet?.cashed) {
             toast("Вы уже забрали выигрыш в этом раунде!");
         }
+    }
+    
+    function cancelBet() {
+        toast("Ставка отменена");
+        hasActiveBet = false;
+        crashMyBet = null;
+        // Возвращаем звёзды (на сервере нужно реализовать возврат)
+        refreshBalance();
+        document.getElementById('crashBtn').innerText = "💰 Сделать ставку";
+        document.getElementById('crashBtn').classList.remove('btn-cancel', 'btn-cashout');
     }
     
     function placeCrash() {
@@ -510,8 +525,13 @@
                 hasActiveBet = true;
                 crashMyBet = { amount: crashBet, autoCashout: autoCashoutValue, cashed: false };
                 refreshBalance();
-                document.getElementById('crashBtn').innerText = "💸 Забрать";
-                document.getElementById('crashBtn').classList.add('btn-cashout');
+                if (isCountdown) {
+                    document.getElementById('crashBtn').innerText = "❌ Отмена";
+                    document.getElementById('crashBtn').classList.add('btn-cancel');
+                } else {
+                    document.getElementById('crashBtn').innerText = "💸 Забрать";
+                    document.getElementById('crashBtn').classList.add('btn-cashout');
+                }
             } else toast(res?.error || 'Ошибка');
         });
     }
@@ -534,13 +554,28 @@
         const statusDiv = document.getElementById('crashStatusText');
         const multDiv = document.getElementById('crashMult');
         if (s > 0) {
+            isCountdown = true;
             if (statusDiv) { multDiv.style.display = 'none'; statusDiv.style.display = 'block'; statusDiv.innerHTML = s; }
             if (el) el.innerHTML = `⏳ Старт через ${s}`;
+            // Если есть активная ставка во время отсчёта — показываем кнопку "Отмена"
+            if (hasActiveBet && !crashActive) {
+                document.getElementById('crashBtn').innerText = "❌ Отмена";
+                document.getElementById('crashBtn').classList.add('btn-cancel');
+                document.getElementById('crashBtn').classList.remove('btn-cashout');
+            }
         } else if (s === 0) {
+            isCountdown = false;
             if (el) el.innerHTML = '🚀 В игре';
             if (statusDiv) statusDiv.style.display = 'none';
             if (multDiv) multDiv.style.display = 'block';
+            // Если есть активная ставка после взлёта — меняем на "Забрать"
+            if (hasActiveBet && crashActive) {
+                document.getElementById('crashBtn').innerText = "💸 Забрать";
+                document.getElementById('crashBtn').classList.add('btn-cashout');
+                document.getElementById('crashBtn').classList.remove('btn-cancel');
+            }
         } else {
+            isCountdown = false;
             if (el && !crashActive) el.innerHTML = '● Ожидание ставок';
         }
     });
@@ -555,8 +590,12 @@
     });
     
     socket.on('rocket_multiplier', (m) => { 
-        currentMultiplier = m; document.getElementById('crashMult').innerHTML = m.toFixed(2) + 'x'; 
-        if (crashActive && crashMyBet && !crashMyBet.cashed && autoCashoutEnabled && currentMultiplier >= autoCashoutValue) cashoutCrash();
+        currentMultiplier = m; 
+        document.getElementById('crashMult').innerHTML = m.toFixed(2) + 'x'; 
+        // Точная проверка автовывода (с учётом погрешности)
+        if (crashActive && crashMyBet && !crashMyBet.cashed && autoCashoutEnabled && currentMultiplier >= autoCashoutValue - 0.005) {
+            cashoutCrash();
+        }
     });
     
     socket.on('rocket_crash', (multiplier) => { 
@@ -574,8 +613,7 @@
         if (historyContainer) historyContainer.innerHTML = crashHistoryData.map(m => `<div class="history-item">${m}x</div>`).join('');
         document.getElementById('crashMult').className = 'multiplier crashed'; document.getElementById('crashMult').innerHTML = 'ВЗРЫВ!';
         document.getElementById('crashBtn').innerText = "💰 Сделать ставку"; 
-        document.getElementById('crashBtn').classList.remove('btn-cashout');
-        document.getElementById('crashBtn').classList.remove('btn-waiting');
+        document.getElementById('crashBtn').classList.remove('btn-cashout', 'btn-cancel');
         setTimeout(() => { refreshBalance(); }, 500);
     });
     
@@ -589,13 +627,13 @@
             hasActiveBet = false;
             document.getElementById('crashBtn').innerText = "⏳ Ожидание";
             document.getElementById('crashBtn').classList.add('btn-waiting');
-            document.getElementById('crashBtn').classList.remove('btn-cashout');
+            document.getElementById('crashBtn').classList.remove('btn-cashout', 'btn-cancel');
             setTimeout(() => {
                 if (!crashActive && !hasActiveBet) {
                     document.getElementById('crashBtn').innerText = "💰 Сделать ставку";
                     document.getElementById('crashBtn').classList.remove('btn-waiting');
                 }
-            }, 1000);
+            }, 2000);
         } 
         const bb = crashBets.find(b => b.name === d.name && !b.cashedAt); 
         if (bb) { bb.cashedAt = d.multiplier; bb.winAmount = d.win; } 
