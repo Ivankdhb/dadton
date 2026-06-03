@@ -67,15 +67,19 @@
         .mine-cell.revealed-mine { background: linear-gradient(135deg, #ff4d73, #cc0033); }
         
         .leaderboard-list { display: flex; flex-direction: column; gap: 8px; }
-        .leader-item { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: #101935; border-radius: 14px; }
-        .leader-rank { width: 50px; font-weight: 800; font-size: 18px; }
-        .rank-1 { color: #ffd700; }
-        .rank-2 { color: #c0c0c0; }
-        .rank-3 { color: #cd7f32; }
+        .leader-item { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-radius: 14px; transition: 0.2s; }
+        .leader-rank { width: 50px; font-weight: 800; font-size: 18px; text-align: center; }
         .leader-info { display: flex; align-items: center; gap: 12px; flex: 1; }
         .leader-avatar { width: 40px; height: 40px; border-radius: 50%; background-size: cover; background-position: center; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: bold; background: linear-gradient(135deg, #f59e0b, #ef4444); overflow: hidden; }
         .leader-name { font-weight: 600; }
         .leader-score { color: #ffaa00; font-weight: 700; }
+        /* ЦВЕТНЫЕ ФОНЫ ДЛЯ ТОПА */
+        .leader-item.rank-1 { background: linear-gradient(135deg, #ffd700, #ffaa00); box-shadow: 0 0 10px rgba(255,215,0,0.3); }
+        .leader-item.rank-1 .leader-name, .leader-item.rank-1 .leader-score { color: #1a1a2e; text-shadow: none; }
+        .leader-item.rank-2 { background: linear-gradient(135deg, #c0c0c0, #a0a0a0); }
+        .leader-item.rank-2 .leader-name, .leader-item.rank-2 .leader-score { color: #1a1a2e; }
+        .leader-item.rank-3 { background: linear-gradient(135deg, #cd7f32, #b87333); }
+        .leader-item.rank-3 .leader-name, .leader-item.rank-3 .leader-score { color: #1a1a2e; }
         
         .profile-avatar { width: 80px; height: 80px; border-radius: 50%; background-size: cover; background-position: center; display: flex; align-items: center; justify-content: center; font-size: 36px; margin: 0 auto 12px; background: linear-gradient(135deg, #f59e0b, #ef4444); overflow: hidden; }
         .profile-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
@@ -246,15 +250,11 @@
     const uid = user ? user.id.toString() : 'p' + Math.floor(Math.random() * 1000000);
     const pname = user ? (user.first_name + (user.last_name ? ' ' + user.last_name : '')) : 'Игрок';
     
-    // ПОЛУЧАЕМ РЕАЛЬНУЮ АВАТАРКУ ИЗ TELEGRAM (ЧЕРЕЗ photo_url)
     let userAvatarUrl = '';
     if (user && user.photo_url) {
         userAvatarUrl = user.photo_url;
-    } else if (user && user.first_name) {
-        userAvatarUrl = ''; // будет использована буква
     }
     
-    // Функция для отображения аватарки в HTML
     function getAvatarHtml(avatarUrl, name) {
         if (avatarUrl && avatarUrl.startsWith('http')) {
             return `<img src="${avatarUrl}" class="avatar-img" onerror="this.style.display='none'; this.parentElement.innerHTML='${name ? name.charAt(0).toUpperCase() : '?'}'">`;
@@ -264,7 +264,6 @@
         }
     }
     
-    // Функция для обновления аватарки в профиле
     function updateProfileAvatar() {
         const profileAvatar = document.getElementById('profileAvatar');
         if (userAvatarUrl) {
@@ -278,6 +277,8 @@
     let referralCount = 0, referralEarned = 0;
     let hasActiveBet = false;
     let isCountdown = false;
+    let isGameActive = false;
+    let rocketStateCountdown = -1;
     
     let crashBet = 10, crashActive = false, crashMyBet = null, crashBets = [], currentMultiplier = 1;
     let autoCashoutEnabled = false, autoCashoutValue = 1.5;
@@ -308,7 +309,6 @@
         socket.emit('get_balance', uid, (d) => { if (d) { stars = d.stars; turnover = d.turnover || 0; games = d.games_played || 0; wins = d.wins || 0; updateUI(); } });
     }
     
-    // Регистрация с передачей аватарки
     socket.emit('register', { telegram_id: uid, name: pname, avatar: userAvatarUrl || pname.charAt(0).toUpperCase() }, (res) => { if (res?.success) { stars = res.stars; updateUI(); } });
     
     function toggleAutoCashout() {
@@ -349,7 +349,6 @@
     
     function cancelBet() {
         if (!hasActiveBet) return;
-        
         socket.emit('rocket_cancel_bet', { telegram_id: uid }, (res) => {
             if (res?.success) {
                 toast(`Ставка отменена. Возвращено ${res.amount}⭐`);
@@ -369,26 +368,38 @@
         
         btn.classList.remove('btn-cancel', 'btn-cashout', 'btn-disabled');
         
-        if (!hasActiveBet && !crashActive && rocketStateCountdown === -1) {
+        // Состояние 1: Нет ставки, игра не активна (ждут ставки) → можно ставить
+        if (!hasActiveBet && !isGameActive && rocketStateCountdown === -1) {
             btn.innerText = "💰 Сделать ставку";
             btn.style.pointerEvents = "auto";
             btn.style.opacity = "1";
             btn.disabled = false;
         }
-        else if (hasActiveBet && isCountdown && !crashActive) {
+        // Состояние 2: Есть ставка, идёт обратный отсчёт → можно отменить
+        else if (hasActiveBet && isCountdown && !isGameActive) {
             btn.innerText = "❌ Отмена";
             btn.classList.add('btn-cancel');
             btn.style.pointerEvents = "auto";
             btn.style.opacity = "1";
             btn.disabled = false;
         }
-        else if (hasActiveBet && crashActive) {
+        // Состояние 3: Есть ставка, игра активна (ракета летит) → можно забрать
+        else if (hasActiveBet && isGameActive) {
             btn.innerText = "💸 Забрать";
             btn.classList.add('btn-cashout');
             btn.style.pointerEvents = "auto";
             btn.style.opacity = "1";
             btn.disabled = false;
         }
+        // Состояние 4: Игра активна, но ставки нет → нельзя ничего
+        else if (!hasActiveBet && isGameActive) {
+            btn.innerText = "⏳ Ожидание";
+            btn.classList.add('btn-disabled');
+            btn.style.pointerEvents = "none";
+            btn.style.opacity = "0.6";
+            btn.disabled = true;
+        }
+        // Состояние 5: Всё остальное
         else {
             btn.innerText = "⏳ Ожидание";
             btn.classList.add('btn-disabled');
@@ -398,19 +409,17 @@
         }
     }
     
-    let rocketStateCountdown = -1;
-    
     function crashClick() { 
         const btn = document.getElementById('crashBtn');
         if (btn.classList.contains('btn-disabled')) return;
         
-        if (hasActiveBet && isCountdown && !crashActive) {
+        if (hasActiveBet && isCountdown && !isGameActive) {
             cancelBet();
-        } else if (hasActiveBet && crashActive && crashMyBet && !crashMyBet.cashed) {
+        } else if (hasActiveBet && isGameActive && crashMyBet && !crashMyBet.cashed) {
             cashoutCrash();
-        } else if (!hasActiveBet && !crashActive && !isCountdown) {
+        } else if (!hasActiveBet && !isGameActive && !isCountdown) {
             placeCrash();
-        } else if (!hasActiveBet && crashActive) {
+        } else if (!hasActiveBet && isGameActive) {
             toast("Вы не сделали ставку в этом раунде!");
         } else if (hasActiveBet && crashMyBet?.cashed) {
             toast("Вы уже забрали выигрыш в этом раунде!");
@@ -443,7 +452,7 @@
     }
     
     function cashoutCrash() { 
-        if (crashActive && crashMyBet && !crashMyBet.cashed) { 
+        if (isGameActive && crashMyBet && !crashMyBet.cashed) { 
             socket.emit('rocket_cashout', { telegram_id: uid, name: pname });
         } 
     }
@@ -466,7 +475,7 @@
         
         if (s > 0) {
             isCountdown = true;
-            crashActive = false;
+            isGameActive = false;
             if (statusDiv) { multDiv.style.display = 'none'; statusDiv.style.display = 'block'; statusDiv.innerHTML = s; }
             if (el) el.innerHTML = `⏳ Старт через ${s}`;
             updateButtonState();
@@ -478,14 +487,15 @@
             updateButtonState();
         } else {
             isCountdown = false;
-            crashActive = false;
-            if (el && !crashActive) el.innerHTML = '● Ожидание ставок';
+            isGameActive = false;
+            if (el && !isGameActive) el.innerHTML = '● Ожидание ставок';
             updateButtonState();
         }
     });
     
     socket.on('rocket_start', () => { 
-        crashActive = true; 
+        isGameActive = true; 
+        crashActive = true;
         currentMultiplier = 1; 
         document.getElementById('crashMult').innerHTML = '1.00x'; 
         document.getElementById('crashMult').className = 'multiplier flying';
@@ -498,13 +508,14 @@
     socket.on('rocket_multiplier', (m) => { 
         currentMultiplier = m; 
         document.getElementById('crashMult').innerHTML = m.toFixed(2) + 'x'; 
-        if (crashActive && crashMyBet && !crashMyBet.cashed && autoCashoutEnabled && currentMultiplier >= autoCashoutValue - 0.005) {
+        if (isGameActive && crashMyBet && !crashMyBet.cashed && autoCashoutEnabled && currentMultiplier >= autoCashoutValue - 0.005) {
             cashoutCrash();
         }
     });
     
     socket.on('rocket_crash', (multiplier) => { 
-        crashActive = false; 
+        isGameActive = false;
+        crashActive = false;
         if (crashMyBet && !crashMyBet.cashed) {
             gameHistory.unshift({ game: 'Ракета', amount: -crashMyBet.amount, time: new Date().toLocaleTimeString() });
             if (gameHistory.length > 10) gameHistory.pop();
@@ -695,12 +706,13 @@
         const cont = document.getElementById('leaderboardList');
         if (!data || !data.length) { cont.innerHTML = '<div class="empty">🏆 Таблица лидеров пуста</div>'; return; }
         cont.innerHTML = data.slice(0, 50).map((u, i) => {
-            let rankClass = ''; let rankNum = i+1;
+            let rankNum = i+1;
+            let rankClass = '';
             if (rankNum === 1) rankClass = 'rank-1';
             else if (rankNum === 2) rankClass = 'rank-2';
             else if (rankNum === 3) rankClass = 'rank-3';
             const avatarHtml = getAvatarHtml(u.avatar, u.name);
-            return `<div class="leader-item"><div class="leader-rank ${rankClass}">${rankNum}</div><div class="leader-info"><div class="leader-avatar">${avatarHtml}</div><div class="leader-name">${u.name}</div></div><div class="leader-score">⭐ ${u.turnover}</div></div>`;
+            return `<div class="leader-item ${rankClass}"><div class="leader-rank">${rankNum}</div><div class="leader-info"><div class="leader-avatar">${avatarHtml}</div><div class="leader-name">${u.name}</div></div><div class="leader-score">⭐ ${u.turnover}</div></div>`;
         }).join('');
     });
     
@@ -717,6 +729,13 @@
         document.getElementById(game).classList.add('active');
         if (game === 'mines') renderMinesBoard(false);
         if (game === 'roulette') drawRouletteWheel();
+        if (game === 'crash') {
+            // Сброс состояния при входе в игру
+            isGameActive = false;
+            isCountdown = false;
+            hasActiveBet = false;
+            updateButtonState();
+        }
     }
     
     loadReferralStats();
