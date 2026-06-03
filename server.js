@@ -21,7 +21,7 @@ db.serialize(() => {
         telegram_id TEXT UNIQUE,
         name TEXT,
         avatar TEXT,
-        stars INTEGER DEFAULT 10000,
+        stars INTEGER DEFAULT 5000,
         turnover INTEGER DEFAULT 0,
         games_played INTEGER DEFAULT 0,
         wins INTEGER DEFAULT 0,
