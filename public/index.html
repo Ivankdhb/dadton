@@ -7,7 +7,6 @@
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="/socket.io/socket.io.js"></script>
     <style>
-        /* (стили такие же, как в предыдущей версии, оставляем без изменений) */
         * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; }
         body { background: #0a1128; color: white; font-family: system-ui, sans-serif; padding-bottom: 65px; }
         .header { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: #0a1128; border-bottom: 1px solid rgba(255,255,255,0.05); }
@@ -404,7 +403,7 @@
             if (el) el.innerHTML = '🚀 В игре';
             if (statusDiv) statusDiv.style.display = 'none';
             if (multDiv) multDiv.style.display = 'block';
-            if (hasActiveBet && crashActive) {
+            if (hasActiveBet && !crashMyBet?.cashed) {
                 document.getElementById('crashBtn').innerText = "💸 Забрать";
                 document.getElementById('crashBtn').classList.add('btn-cashout');
                 document.getElementById('crashBtn').classList.remove('btn-cancel');
@@ -422,6 +421,11 @@
         document.getElementById('crashStatus').innerHTML = '🚀 В игре';
         const statusDiv = document.getElementById('crashStatusText'); if (statusDiv) statusDiv.style.display = 'none';
         const multDiv = document.getElementById('crashMult'); if (multDiv) multDiv.style.display = 'block';
+        if (hasActiveBet && !crashMyBet?.cashed) {
+            document.getElementById('crashBtn').innerText = "💸 Забрать";
+            document.getElementById('crashBtn').classList.add('btn-cashout');
+            document.getElementById('crashBtn').classList.remove('btn-cancel');
+        }
     });
     
     socket.on('rocket_multiplier', (m) => { 
