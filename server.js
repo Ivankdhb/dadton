@@ -14,10 +14,8 @@ const io = socketIo(server, {
 app.use(express.json());
 app.use(express.static('public'));
 
-// SQLite база данных
 const db = new sqlite3.Database('dadton.db');
 
-// Создаём таблицы
 db.serialize(() => {
     db.run(`CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -40,7 +38,6 @@ db.serialize(() => {
 
 console.log('✅ База данных SQLite готова');
 
-// ========== СОСТОЯНИЕ РАКЕТЫ ==========
 let rocketState = {
     status: 'waiting',
     currentMultiplier: 1.00,
@@ -115,11 +112,8 @@ function startRocketFlying() {
             
             db.run(`INSERT INTO rocket_history (multiplier) VALUES (?)`, [rocketState.currentMultiplier]);
             
-            rocketState.bets.forEach(bet => {
-                if (!bet.cashedAt) {
-                    db.run(`UPDATE users SET stars = stars - ? WHERE telegram_id = ?`, [bet.amount, bet.telegram_id]);
-                }
-            });
+            // При краше НЕ списываем ставки — они уже списаны при создании ставки
+            // Только если кто-то не забрал — он просто теряет свою ставку (она уже списана)
             
             setTimeout(startRocketCountdown, 1500);
         } else {
@@ -128,10 +122,7 @@ function startRocketFlying() {
     }, 100);
 }
 
-// ========== МИНЫ ==========
 let minesState = new Map();
-
-// ========== РУЛЕТКА ==========
 let rouletteBets = [];
 let rouletteIsSpinning = false;
 
@@ -147,11 +138,9 @@ function calculateRouletteWinner() {
     return null;
 }
 
-// ========== WEB SOCKETS ==========
 io.on('connection', (socket) => {
     console.log('👤 Игрок подключился');
     
-    // РЕГИСТРАЦИЯ с поддержкой рефералов и аватарок
     socket.on('register', (data, callback) => {
         const telegram_id = data.telegram_id || 'player_' + Math.floor(Math.random() * 1000000);
         const name = data.name || 'Игрок';
@@ -163,12 +152,10 @@ io.on('connection', (socket) => {
                 db.run(`INSERT INTO users (telegram_id, name, avatar, stars, referrer_id) VALUES (?, ?, ?, 1000, ?)`, 
                     [telegram_id, name, avatar, referrerId], function(err) {
                     if (err) {
-                        console.error('Ошибка регистрации:', err);
                         if (callback) callback({ success: false, error: err.message });
                     } else {
-                        // Если есть реферер, начисляем ему бонус 100 звёзд
                         if (referrerId) {
-                            db.run(`UPDATE users SET stars = stars + 100, turnover = turnover + 100 WHERE telegram_id = ?`, [referrerId]);
+                            db.run(`UPDATE users SET stars = stars + 100 WHERE telegram_id = ?`, [referrerId]);
                         }
                         if (callback) callback({ success: true, stars: 1000, name, telegram_id, avatar, turnover: 0, games_played: 0, wins: 0 });
                     }
@@ -179,7 +166,6 @@ io.on('connection', (socket) => {
         });
     });
     
-    // ПОЛУЧИТЬ БАЛАНС
     socket.on('get_balance', (telegram_id, callback) => {
         db.get(`SELECT stars, name, avatar, turnover, games_played, wins FROM users WHERE telegram_id = ?`, [telegram_id], (err, row) => {
             if (row) {
@@ -190,14 +176,12 @@ io.on('connection', (socket) => {
         });
     });
     
-    // ПОЛУЧИТЬ РЕФЕРАЛЬНУЮ СТАТИСТИКУ
     socket.on('get_referral_stats', (telegram_id, callback) => {
         db.get(`SELECT COUNT(*) as count, SUM(turnover) as total FROM users WHERE referrer_id = ?`, [telegram_id], (err, row) => {
             if (callback) callback({ count: row?.count || 0, earned: Math.floor((row?.total || 0) * 0.1) });
         });
     });
     
-    // ===== РАКЕТА =====
     socket.on('rocket_place_bet', (data, callback) => {
         if (rocketState.status !== 'waiting') {
             if (callback) callback({ success: false, error: 'Ставки только до взлёта!' });
@@ -217,8 +201,8 @@ io.on('connection', (socket) => {
                 return;
             }
             
-            db.run(`UPDATE users SET stars = stars - ? WHERE telegram_id = ?`, [amount, telegram_id]);
-            db.run(`UPDATE users SET games_played = games_played + 1 WHERE telegram_id = ?`, [telegram_id]);
+            // СПИСЫВАЕМ ТОЛЬКО ОДИН РАЗ — ПРЯМО СЕЙЧАС
+            db.run(`UPDATE users SET stars = stars - ?, games_played = games_played + 1 WHERE telegram_id = ?`, [amount, telegram_id]);
             
             rocketState.bets.push({
                 telegram_id, name, amount, autoCashout,
@@ -247,7 +231,6 @@ io.on('connection', (socket) => {
             db.run(`UPDATE users SET stars = stars + ?, turnover = turnover + ?, wins = wins + 1 WHERE telegram_id = ?`, 
                 [winAmount, winAmount, telegram_id]);
             
-            // Начисляем 10% рефереру
             db.get(`SELECT referrer_id FROM users WHERE telegram_id = ?`, [telegram_id], (err, row) => {
                 if (row && row.referrer_id) {
                     const referrerBonus = Math.floor(winAmount * 0.1);
@@ -269,7 +252,6 @@ io.on('connection', (socket) => {
         });
     });
     
-    // ===== МИНЫ =====
     socket.on('mines_start', (data, callback) => {
         const { telegram_id, betAmount, minesCount } = data;
         
@@ -284,8 +266,7 @@ io.on('connection', (socket) => {
                 return;
             }
             
-            db.run(`UPDATE users SET stars = stars - ? WHERE telegram_id = ?`, [betAmount, telegram_id]);
-            db.run(`UPDATE users SET games_played = games_played + 1 WHERE telegram_id = ?`, [telegram_id]);
+            db.run(`UPDATE users SET stars = stars - ?, games_played = games_played + 1 WHERE telegram_id = ?`, [betAmount, telegram_id]);
             
             const totalCells = 25;
             let realMinesCount = Math.min(24, minesCount + Math.floor(Math.random() * 4) + 2);
@@ -342,7 +323,6 @@ io.on('connection', (socket) => {
             db.run(`UPDATE users SET stars = stars + ?, turnover = turnover + ?, wins = wins + 1 WHERE telegram_id = ?`, 
                 [winAmount, winAmount, telegram_id]);
             
-            // Начисляем 10% рефереру
             db.get(`SELECT referrer_id FROM users WHERE telegram_id = ?`, [telegram_id], (err, row) => {
                 if (row && row.referrer_id) {
                     const referrerBonus = Math.floor(winAmount * 0.1);
@@ -380,7 +360,6 @@ io.on('connection', (socket) => {
         db.run(`UPDATE users SET stars = stars + ?, turnover = turnover + ?, wins = wins + 1 WHERE telegram_id = ?`, 
             [winAmount, winAmount, telegram_id]);
         
-        // Начисляем 10% рефереру
         db.get(`SELECT referrer_id FROM users WHERE telegram_id = ?`, [telegram_id], (err, row) => {
             if (row && row.referrer_id) {
                 const referrerBonus = Math.floor(winAmount * 0.1);
@@ -395,7 +374,6 @@ io.on('connection', (socket) => {
         if (callback) callback({ success: true, winAmount });
     });
     
-    // ===== РУЛЕТКА =====
     socket.on('roulette_place_bet', (data, callback) => {
         if (rouletteIsSpinning) {
             if (callback) callback({ success: false, error: 'Рулетка крутится!' });
@@ -415,8 +393,7 @@ io.on('connection', (socket) => {
                 return;
             }
             
-            db.run(`UPDATE users SET stars = stars - ? WHERE telegram_id = ?`, [amount, telegram_id]);
-            db.run(`UPDATE users SET games_played = games_played + 1 WHERE telegram_id = ?`, [telegram_id]);
+            db.run(`UPDATE users SET stars = stars - ?, games_played = games_played + 1 WHERE telegram_id = ?`, [amount, telegram_id]);
             
             rouletteBets.push({ telegram_id, name, amount, avatar: avatar || '👤' });
             io.emit('roulette_update', rouletteBets);
@@ -447,7 +424,6 @@ io.on('connection', (socket) => {
                 db.run(`UPDATE users SET stars = stars + ?, turnover = turnover + ?, wins = wins + 1 WHERE telegram_id = ?`, 
                     [winAmount, winAmount, winner.telegram_id]);
                 
-                // Начисляем 10% рефереру
                 db.get(`SELECT referrer_id FROM users WHERE telegram_id = ?`, [winner.telegram_id], (err, row) => {
                     if (row && row.referrer_id) {
                         const referrerBonus = Math.floor(winAmount * 0.1);
@@ -473,7 +449,6 @@ io.on('connection', (socket) => {
         if (callback) callback(rouletteBets);
     });
     
-    // ===== ЛИДЕРЫ (с аватарками) =====
     socket.on('get_leaderboard', () => {
         db.all(`SELECT name, avatar, turnover FROM users ORDER BY turnover DESC LIMIT 50`, (err, rows) => {
             io.emit('leaderboard_data', rows || []);
@@ -494,8 +469,8 @@ server.listen(PORT, () => {
     ║   🚀 DADTON СЕРВЕР ЗАПУЩЕН          ║
     ║   http://localhost:${PORT}              ║
     ║                                      ║
-    ║   📊 Аватарки из Telegram           ║
-    ║   💰 Реферальная система 10%        ║
+    ║   ✅ Ставка списывается только 1 раз ║
+    ║   ✅ Аватарки из Telegram            ║
     ╚══════════════════════════════════════╝
     `);
 });
