@@ -3,57 +3,317 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>DadTon</title>
+    <title>DadTon - Ракета</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="/socket.io/socket.io.js"></script>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+        }
         body {
             background: #0a1128;
             color: white;
             font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
             padding-bottom: 65px;
         }
-        .header { display: flex; justify-content: space-between; padding: 12px 16px; background: #0a1128; border-bottom: 1px solid rgba(255,255,255,0.05); }
-        .balance { background: rgba(255,255,255,0.05); padding: 4px 14px; border-radius: 30px; color: #ffaa00; font-weight: 700; }
-        .screen { display: none; padding: 12px; }
-        .screen.active { display: block; }
-        .game-card { background: linear-gradient(135deg, #ff5277, #ff2a55); border-radius: 16px; padding: 16px; margin-bottom: 12px; position: relative; cursor: pointer; }
-        .game-card .title { font-size: 18px; font-weight: 800; }
-        .game-card .art { position: absolute; right: 16px; bottom: 8px; font-size: 40px; }
-        .card-mines { background: linear-gradient(135deg, #a78bfa, #7c3aed); }
-        .card-roulette { background: linear-gradient(135deg, #ffd043, #ffaa00); color: #3d2700; }
-        .widget { background: #101935; border-radius: 16px; padding: 16px; margin-bottom: 12px; }
-        .btn { background: #0098ea; width: 100%; padding: 14px; border: none; border-radius: 14px; color: white; font-weight: 700; font-size: 14px; cursor: pointer; }
-        .btn-cashout { background: #00e699; color: black; }
-        .preset-row { display: flex; gap: 8px; margin: 12px 0; }
-        .preset { background: #1e295d; padding: 8px; border-radius: 10px; flex: 1; text-align: center; cursor: pointer; font-weight: 700; }
-        .crash-display { background: radial-gradient(circle, #1b1947, #101935); height: 140px; border-radius: 16px; display: flex; align-items: center; justify-content: center; margin-bottom: 12px; }
-        .multiplier { font-size: 44px; font-weight: 900; }
-        .multiplier.flying { color: #00e699; }
-        .multiplier.crashed { color: #ff4d73; }
-        .history { display: flex; gap: 8px; overflow-x: auto; margin-bottom: 12px; }
-        .history-item { background: #1e295d; padding: 4px 12px; border-radius: 20px; font-size: 12px; }
-        .mines-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin: 12px 0; }
-        .mine-cell { aspect-ratio: 1; background: #1e295d; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 22px; cursor: pointer; }
-        .empty { text-align: center; padding: 40px; color: #6b7c96; }
-        .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; height: 56px; background: #101935; display: flex; justify-content: space-around; align-items: center; border-top: 1px solid rgba(255,255,255,0.05); }
-        .nav-item { display: flex; flex-direction: column; align-items: center; gap: 2px; color: #6b7c96; cursor: pointer; }
-        .nav-item.active { color: #00e699; }
-        .nav-icon { font-size: 20px; }
-        .nav-label { font-size: 9px; font-weight: 700; }
-        .toast { position: fixed; bottom: 70px; left: 50%; transform: translateX(-50%); background: black; padding: 8px 16px; border-radius: 30px; font-size: 12px; z-index: 200; display: none; }
-        .panel-value { font-size: 24px; font-weight: 800; text-align: center; color: #ffaa00; }
-        .panel-label { text-align: center; font-size: 11px; color: #6b7c96; margin-bottom: 4px; }
-        .player-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
-        .profile-subtab-bar { display: flex; background: #1e295d; padding: 4px; border-radius: 12px; margin-bottom: 12px; }
-        .subtab-btn { flex: 1; background: transparent; border: none; color: #6b7c96; padding: 8px; font-weight: 700; font-size: 12px; border-radius: 8px; cursor: pointer; }
-        .subtab-btn.active { background: #00e699; color: black; }
-        .ref-link-box { background: #1e295d; padding: 12px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
-        .ref-url { font-size: 11px; color: #6b7c96; word-break: break-all; flex: 1; }
-        .copy-btn { background: #0098ea; border: none; padding: 6px 12px; border-radius: 20px; color: white; font-size: 11px; cursor: pointer; }
-        .auto-row { display: flex; justify-content: space-between; align-items: center; background: #1e295d; padding: 10px 12px; border-radius: 12px; margin-top: 10px; }
-        .auto-input { background: #0a1128; border: none; color: white; padding: 6px 10px; border-radius: 20px; width: 65px; text-align: center; }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 16px;
+            background: #0a1128;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .balance {
+            background: rgba(255,255,255,0.05);
+            padding: 4px 14px;
+            border-radius: 30px;
+            color: #ffaa00;
+            font-weight: 700;
+        }
+        .screen {
+            display: none;
+            padding: 12px;
+        }
+        .screen.active {
+            display: block;
+        }
+        .game-card {
+            background: linear-gradient(135deg, #ff5277, #ff2a55);
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 12px;
+            position: relative;
+            cursor: pointer;
+        }
+        .game-card .title {
+            font-size: 18px;
+            font-weight: 800;
+        }
+        .game-card .art {
+            position: absolute;
+            right: 16px;
+            bottom: 8px;
+            font-size: 40px;
+        }
+        .card-mines {
+            background: linear-gradient(135deg, #a78bfa, #7c3aed);
+        }
+        .card-roulette {
+            background: linear-gradient(135deg, #ffd043, #ffaa00);
+            color: #3d2700;
+        }
+        .widget {
+            background: #101935;
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 12px;
+        }
+        .btn {
+            background: #0098ea;
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 14px;
+            color: white;
+            font-weight: 700;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        .btn-cashout {
+            background: #00e699;
+            color: black;
+        }
+        .preset-row {
+            display: flex;
+            gap: 8px;
+            margin: 12px 0;
+        }
+        .preset {
+            background: #1e295d;
+            padding: 8px;
+            border-radius: 10px;
+            flex: 1;
+            text-align: center;
+            cursor: pointer;
+            font-weight: 700;
+        }
+        .crash-display {
+            background: radial-gradient(circle, #1b1947, #101935);
+            height: 140px;
+            border-radius: 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 12px;
+        }
+        .multiplier {
+            font-size: 44px;
+            font-weight: 900;
+        }
+        .multiplier.flying {
+            color: #00e699;
+        }
+        .multiplier.crashed {
+            color: #ff4d73;
+        }
+        .countdown-big {
+            font-size: 36px;
+            font-weight: 900;
+            color: #f59e0b;
+        }
+        .history {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            margin-bottom: 12px;
+        }
+        .history-item {
+            background: #1e295d;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+        }
+        .bets-container {
+            max-height: 250px;
+            overflow-y: auto;
+        }
+        .bet-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 12px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 50px;
+            margin-bottom: 6px;
+            font-size: 12px;
+        }
+        .empty {
+            text-align: center;
+            padding: 20px;
+            color: #6b7c96;
+        }
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 56px;
+            background: #101935;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            border-top: 1px solid rgba(255,255,255,0.05);
+        }
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+            color: #6b7c96;
+            cursor: pointer;
+        }
+        .nav-item.active {
+            color: #00e699;
+        }
+        .nav-icon {
+            font-size: 20px;
+        }
+        .nav-label {
+            font-size: 9px;
+            font-weight: 700;
+        }
+        .toast {
+            position: fixed;
+            bottom: 70px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: black;
+            padding: 8px 16px;
+            border-radius: 30px;
+            font-size: 12px;
+            z-index: 200;
+            display: none;
+        }
+        .panel-value {
+            font-size: 24px;
+            font-weight: 800;
+            text-align: center;
+            color: #ffaa00;
+        }
+        .panel-label {
+            text-align: center;
+            font-size: 11px;
+            color: #6b7c96;
+            margin-bottom: 4px;
+        }
+        
+        /* Переключатель автовывода */
+        .auto-toggle-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #1e295d;
+            padding: 12px 16px;
+            border-radius: 40px;
+            margin-bottom: 12px;
+        }
+        .toggle-label {
+            font-size: 14px;
+            font-weight: 600;
+        }
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #334155;
+            transition: 0.2s;
+            border-radius: 24px;
+        }
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: 0.2s;
+            border-radius: 50%;
+        }
+        input:checked + .toggle-slider {
+            background-color: #00e699;
+        }
+        input:checked + .toggle-slider:before {
+            transform: translateX(26px);
+        }
+        .auto-value-input {
+            background: #0a1128;
+            border: none;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 30px;
+            width: 70px;
+            text-align: center;
+        }
+        
+        .profile-subtab-bar {
+            display: flex;
+            background: #1e295d;
+            padding: 4px;
+            border-radius: 12px;
+            margin-bottom: 12px;
+        }
+        .subtab-btn {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: #6b7c96;
+            padding: 8px;
+            font-weight: 700;
+            font-size: 12px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        .subtab-btn.active {
+            background: #00e699;
+            color: black;
+        }
+        .ref-link-box {
+            background: #1e295d;
+            padding: 12px;
+            border-radius: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+        }
+        .copy-btn {
+            background: #0098ea;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 20px;
+            color: white;
+            font-size: 11px;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
@@ -64,13 +324,25 @@
 </header>
 
 <div id="home" class="screen active">
-    <div class="game-card" onclick="goTo('crash')"><div class="title">Ракета</div><div class="art">🚀</div></div>
-    <div class="game-card card-mines" onclick="goTo('mines')"><div class="title">Мины 5x5</div><div class="art">💣</div></div>
-    <div class="game-card card-roulette" onclick="goTo('roulette')"><div class="title">Рулетка</div><div class="art">🎡</div></div>
+    <div class="game-card" onclick="goTo('crash')">
+        <div class="title">Ракета</div>
+        <div class="art">🚀</div>
+    </div>
+    <div class="game-card card-mines" onclick="goTo('mines')">
+        <div class="title">Мины 5x5</div>
+        <div class="art">💣</div>
+    </div>
+    <div class="game-card card-roulette" onclick="goTo('roulette')">
+        <div class="title">Рулетка</div>
+        <div class="art">🎡</div>
+    </div>
 </div>
 
 <div id="crash" class="screen">
-    <div class="crash-display"><div class="multiplier" id="crashMult">1.00x</div></div>
+    <div class="crash-display">
+        <div class="multiplier" id="crashMult">1.00x</div>
+        <div id="crashStatusText" class="countdown-big" style="display: none;"></div>
+    </div>
     <div class="history" id="crashHistory"></div>
     <div class="widget">
         <div class="panel-label">Сумма ставки</div>
@@ -80,16 +352,26 @@
             <div class="preset" onclick="bet('add')">+10</div>
             <div class="preset" onclick="bet('max')">MAX</div>
         </div>
-
-        <div class="auto-row">
-            <span>⚡ Автовывод при x</span>
-            <input type="number" id="autoCashoutVal" class="auto-input" value="1.8" step="0.1" min="1.1" max="10">
+        
+        <!-- Автовывод с ползунком -->
+        <div class="auto-toggle-row">
+            <span class="toggle-label">⚡ Автовывод</span>
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <input type="number" id="autoCashoutVal" class="auto-value-input" value="1.5" step="0.05" min="1.05" max="10" style="width: 65px;">
+                <label class="toggle-switch">
+                    <input type="checkbox" id="autoCashoutToggle">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
         </div>
-
+        
         <div class="btn" id="crashBtn" onclick="crashClick()">💰 Сделать ставку</div>
     </div>
-    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;"><span>Участники</span><span id="crashStatus">● Ожидание</span></div>
-    <div id="crashBets"></div>
+    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+        <span>👥 Участники</span>
+        <span id="crashStatus">● Ожидание</span>
+    </div>
+    <div class="bets-container" id="crashBets"></div>
 </div>
 
 <div id="mines" class="screen">
@@ -103,7 +385,7 @@
         </div>
         <div class="btn" id="minesBtn" onclick="minesClick()">💣 Новая игра</div>
     </div>
-    <div class="mines-grid" id="minesGrid"></div>
+    <div class="mines-grid" id="minesBoard" style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin: 12px 0;"></div>
     <div style="text-align: center; margin: 8px 0;">Множитель: <span id="minesMult">1.00x</span></div>
     <div class="btn" id="minesCash" disabled onclick="minesCashout()" style="background: #2a3448;">💰 Забрать</div>
 </div>
@@ -120,8 +402,11 @@
         <div class="btn" onclick="placeRoulette()">📥 Сделать ставку</div>
         <div class="btn" style="margin-top: 8px;" onclick="spinRoulette()">🎲 КРУТИТЬ</div>
     </div>
-    <div style="display: flex; justify-content: space-between;"><span>Участники</span><span id="rouletteTotal">Общая ставка: 0⭐</span></div>
-    <div id="rouletteBets"></div>
+    <div style="display: flex; justify-content: space-between;">
+        <span>Участники</span>
+        <span id="rouletteTotal">Общая ставка: 0⭐</span>
+    </div>
+    <div class="bets-container" id="rouletteBetsList"></div>
 </div>
 
 <div id="leaders" class="screen">
@@ -145,7 +430,7 @@
         <button class="subtab-btn" onclick="switchSubtab('games', this)">Мои игры</button>
         <button class="subtab-btn" onclick="switchSubtab('refs', this)">Рефералы</button>
     </div>
-    <div id="profileSubContent"></div>
+    <div id="profileContent"></div>
 </div>
 
 <nav class="bottom-nav">
@@ -162,23 +447,26 @@
     const user = tg?.initDataUnsafe?.user;
     const uid = user ? user.id.toString() : 'p' + Math.floor(Math.random() * 1000000);
     const pname = user ? (user.first_name + (user.last_name ? ' ' + user.last_name : '')) : 'Игрок';
-
+    
     let stars = 1000, turnover = 0, games = 0, wins = 0;
-
+    
     // Ракета
     let crashBet = 10, crashActive = false, crashMyBet = null, crashBets = [], currentMultiplier = 1;
+    let autoCashoutEnabled = false;
+    let autoCashoutValue = 1.5;
+    
     // Мины
     let minesBet = 20, minesActive = false, minesRevealed = 0, minesCount = 5, minesBetAmount = 0, minesMult = 1;
     // Рулетка
     let rouletteBet = 10, rouletteBets = [], rouletteSpinning = false;
-
+    
     function toast(msg) {
         const t = document.getElementById('toast');
         t.innerText = msg;
         t.style.display = 'block';
         setTimeout(() => t.style.display = 'none', 2000);
     }
-
+    
     function updateUI() {
         document.getElementById('balance').innerText = stars;
         document.getElementById('crashBet').innerText = crashBet;
@@ -192,7 +480,7 @@
         const wr = games ? ((wins / games) * 100).toFixed(1) : 0;
         document.getElementById('profWr').innerText = wr + '%';
     }
-
+    
     function refreshBalance() {
         socket.emit('get_balance', uid, (d) => {
             if (d) {
@@ -204,28 +492,26 @@
             }
         });
     }
-
+    
     socket.emit('register', { telegram_id: uid, name: pname, avatar: '👤' }, (res) => {
         if (res?.success) { stars = res.stars; updateUI(); }
     });
-
-    // ========== ПОДВКЛАДКИ ПРОФИЛЯ ==========
+    
+    // ========== ПРОФИЛЬ ==========
     function switchSubtab(tab, btn) {
         document.querySelectorAll('.subtab-btn').forEach(b => b.classList.remove('active'));
         if (btn) btn.classList.add('active');
-
-        const container = document.getElementById('profileSubContent');
+        const container = document.getElementById('profileContent');
         if (tab === 'balance') {
             container.innerHTML = `<div class="empty">📊 История транзакций появится после первых игр</div>`;
         } else if (tab === 'games') {
             container.innerHTML = `<div class="empty">🎮 Сыграйте в игры, чтобы увидеть историю</div>`;
-        } else if (tab === 'refs') {
-            const refLink = `https://t.me/share/url?url=DadTon&text=Играй со мной в DadTon!`;
-            container.innerHTML = `<div class="ref-link-box"><span class="ref-url">${refLink}</span><button class="copy-btn" onclick="navigator.clipboard.writeText('${refLink}'); toast('Ссылка скопирована!')">Копировать</button></div>`;
+        } else {
+            container.innerHTML = `<div class="ref-link-box"><span class="ref-url">https://t.me/share/url?url=DadTon&text=Играй со мной!</span><button class="copy-btn" onclick="navigator.clipboard.writeText('https://t.me/share/url?url=DadTon&text=Играй со мной!'); toast('Ссылка скопирована!')">Копировать</button></div>`;
         }
     }
-
-    // ========== РАКЕТА С АВТОВЫВОДОМ ==========
+    
+    // ========== РАКЕТА ==========
     function bet(type) {
         if (crashActive) return;
         if (type === 'min') crashBet = 10;
@@ -235,103 +521,112 @@
         if (crashBet > stars) crashBet = stars;
         updateUI();
     }
-
-    function crashClick() {
-        if (crashActive) {
-            cashoutCrash();
-        } else {
-            placeCrash();
-        }
-    }
-
+    
+    function crashClick() { crashActive ? cashoutCrash() : placeCrash(); }
+    
     function placeCrash() {
         if (stars < crashBet) { toast("Не хватает звёзд"); return; }
-        const autoVal = parseFloat(document.getElementById('autoCashoutVal').value);
-        socket.emit('rocket_place_bet', { telegram_id: uid, name: pname, amount: crashBet, autoCashout: autoVal, avatar: '👤' }, (res) => {
+        autoCashoutEnabled = document.getElementById('autoCashoutToggle').checked;
+        autoCashoutValue = parseFloat(document.getElementById('autoCashoutVal').value);
+        
+        socket.emit('rocket_place_bet', { telegram_id: uid, name: pname, amount: crashBet, autoCashout: autoCashoutValue, avatar: '👤' }, (res) => {
             if (res?.success) {
-                crashMyBet = { amount: crashBet, autoCashout: autoVal, cashed: false };
+                crashMyBet = { amount: crashBet, autoCashout: autoCashoutValue, cashed: false };
                 refreshBalance();
                 document.getElementById('crashBtn').innerText = "💸 Забрать";
                 document.getElementById('crashBtn').classList.add('btn-cashout');
             } else toast(res?.error || 'Ошибка');
         });
     }
-
-    function cashoutCrash() {
-        if (crashActive && crashMyBet && !crashMyBet.cashed) {
-            crashMyBet.cashed = true;
-            socket.emit('rocket_cashout', { telegram_id: uid, name: pname });
-        }
-    }
-
+    
+    function cashoutCrash() { if (crashActive && crashMyBet && !crashMyBet.cashed) socket.emit('rocket_cashout', { telegram_id: uid, name: pname }); }
+    
     function renderCrashBets() {
         const cont = document.getElementById('crashBets');
         if (!cont) return;
         if (!crashBets.length) { cont.innerHTML = '<div class="empty">Нет ставок</div>'; return; }
-        cont.innerHTML = crashBets.map(b => `<div class="player-row"><span>${b.name}</span><span style="color:#ffaa00;">⭐ ${b.amount}</span>${b.cashedAt ? `<span style="color:#00e699;">✅ ${b.cashedAt.toFixed(2)}x</span>` : '<span style="color:#f59e0b;">⏳</span>'}${b.autoCashout ? `<span style="color:#6b7c96; font-size:11px;"> 🎯${b.autoCashout}x</span>` : ''}</div>`).join('');
+        cont.innerHTML = crashBets.map(b => `<div class="bet-item"><span>${b.name}</span><span>⭐ ${b.amount}</span>${b.cashedAt ? `<span style="color:#00e699;">✅ ${b.cashedAt.toFixed(2)}x</span>` : '<span style="color:#f59e0b;">⏳</span>'}</div>`).join('');
     }
-
-    // СОКЕТЫ РАКЕТЫ
-    socket.on('rocket_countdown', (s) => {
+    
+    socket.on('rocket_countdown', (s) => { 
         const el = document.getElementById('crashStatus');
+        const statusDiv = document.getElementById('crashStatusText');
+        const multDiv = document.getElementById('crashMult');
+        if (s > 0 && !crashActive) {
+            if (statusDiv) {
+                multDiv.style.display = 'none';
+                statusDiv.style.display = 'block';
+                statusDiv.innerHTML = s;
+            }
+        } else {
+            if (statusDiv) statusDiv.style.display = 'none';
+            if (multDiv) multDiv.style.display = 'block';
+        }
         if (el) el.innerHTML = s > 0 ? `● Старт через ${s}` : '● Летит!';
     });
-
-    socket.on('rocket_start', () => {
-        crashActive = true;
-        currentMultiplier = 1;
-        document.getElementById('crashMult').innerHTML = '1.00x';
+    
+    socket.on('rocket_start', () => { 
+        crashActive = true; 
+        currentMultiplier = 1; 
+        document.getElementById('crashMult').innerHTML = '1.00x'; 
         document.getElementById('crashMult').className = 'multiplier flying';
+        const statusDiv = document.getElementById('crashStatusText');
+        if (statusDiv) statusDiv.style.display = 'none';
+        const multDiv = document.getElementById('crashMult');
+        if (multDiv) multDiv.style.display = 'block';
     });
-
-    socket.on('rocket_multiplier', (m) => {
-        currentMultiplier = m;
-        document.getElementById('crashMult').innerHTML = m.toFixed(2) + 'x';
-
-        // АВТОВЫВОД — проверяем каждое обновление множителя
-        if (crashActive && crashMyBet && !crashMyBet.cashed && currentMultiplier >= crashMyBet.autoCashout) {
+    
+    socket.on('rocket_multiplier', (m) => { 
+        currentMultiplier = m; 
+        document.getElementById('crashMult').innerHTML = m.toFixed(2) + 'x'; 
+        if (crashActive && crashMyBet && !crashMyBet.cashed && autoCashoutEnabled && currentMultiplier >= autoCashoutValue) {
             cashoutCrash();
         }
     });
-
-    socket.on('rocket_crash', () => {
-        crashActive = false;
-        crashMyBet = null;
-        document.getElementById('crashMult').className = 'multiplier crashed';
-        document.getElementById('crashMult').innerHTML = 'ВЗРЫВ!';
-        document.getElementById('crashBtn').innerText = "💰 Сделать ставку";
-        document.getElementById('crashBtn').classList.remove('btn-cashout');
-        refreshBalance();
-    });
-
-    socket.on('rocket_bet_placed', (b) => {
-        crashBets.push({ ...b, cashedAt: null });
-        renderCrashBets();
-        refreshBalance();
-    });
-
-    socket.on('rocket_cashout_done', (d) => {
-        if (d.name === pname) {
+    
+    socket.on('rocket_crash', () => { 
+        crashActive = false; 
+        if (crashMyBet && !crashMyBet.cashed) {
+            // Проигрыш — ставка уже списана на сервере
+            crashMyBet = null;
             refreshBalance();
         }
-        const bb = crashBets.find(b => b.name === d.name && !b.cashedAt);
-        if (bb) {
-            bb.cashedAt = d.multiplier;
+        document.getElementById('crashMult').className = 'multiplier crashed'; 
+        document.getElementById('crashMult').innerHTML = 'ВЗРЫВ!';
+        document.getElementById('crashBtn').innerText = "💰 Сделать ставку"; 
+        document.getElementById('crashBtn').classList.remove('btn-cashout'); 
+        setTimeout(() => { refreshBalance(); }, 500);
+    });
+    
+    socket.on('rocket_bet_placed', (b) => { 
+        crashBets.push({ ...b, cashedAt: null }); 
+        renderCrashBets(); 
+        refreshBalance(); 
+    });
+    
+    socket.on('rocket_cashout_done', (d) => { 
+        if (d.name === pname) { 
+            refreshBalance(); 
+            if (crashMyBet) crashMyBet.cashed = true;
+        } 
+        const bb = crashBets.find(b => b.name === d.name && !b.cashedAt); 
+        if (bb) { 
+            bb.cashedAt = d.multiplier; 
             bb.winAmount = d.win;
-        }
-        renderCrashBets();
+        } 
+        renderCrashBets(); 
     });
-
-    socket.on('rocket_bets_clear', () => {
-        crashBets = [];
-        renderCrashBets();
+    
+    socket.on('rocket_bets_clear', () => { 
+        crashBets = []; 
+        renderCrashBets(); 
     });
-
-    socket.on('rocket_history_data', (d) => {
-        const h = document.getElementById('crashHistory');
-        if (h) h.innerHTML = (d || []).map(m => `<div class="history-item">${m.multiplier.toFixed(2)}x</div>`).join('');
+    
+    socket.on('rocket_history_data', (d) => { 
+        const h = document.getElementById('crashHistory'); 
+        if (h) h.innerHTML = (d || []).map(m => `<div class="history-item">${m.multiplier.toFixed(2)}x</div>`).join(''); 
     });
-
+    
     // ========== МИНЫ ==========
     function minesBetAdj(type) {
         if (type === 'half') minesBet = Math.floor(minesBet / 2);
@@ -341,27 +636,24 @@
         if (minesBet > stars) minesBet = stars;
         updateUI();
     }
-
+    
     function minesClick() { minesActive ? minesCashout() : startMines(); }
-
+    
     function startMines() {
         if (stars < minesBet) { toast("Не хватает звёзд"); return; }
         socket.emit('mines_start', { telegram_id: uid, betAmount: minesBet, minesCount: 5 }, (res) => {
             if (res?.success) {
-                minesActive = true;
-                minesBetAmount = minesBet;
-                minesRevealed = 0;
-                minesMult = 1;
+                minesActive = true; minesBetAmount = minesBet; minesRevealed = 0; minesMult = 1;
                 document.getElementById('minesMult').innerText = '1.00x';
                 document.getElementById('minesBtn').innerText = "💰 Забрать";
                 document.getElementById('minesBtn').classList.add('btn-cashout');
                 document.getElementById('minesCash').disabled = false;
-                renderMines(true);
+                renderMinesBoard(true);
                 refreshBalance();
             } else toast(res?.error || 'Ошибка');
         });
     }
-
+    
     function revealMine(idx) {
         if (!minesActive) return;
         socket.emit('mines_reveal', { telegram_id: uid, cellIndex: idx }, (res) => {
@@ -369,7 +661,7 @@
             if (res.exploded) {
                 toast('💣 МИНА! Проигрыш');
                 minesActive = false;
-                renderMines(false);
+                renderMinesBoard(false);
                 document.getElementById('minesBtn').innerText = "💣 Новая игра";
                 document.getElementById('minesBtn').classList.remove('btn-cashout');
                 document.getElementById('minesCash').disabled = true;
@@ -385,7 +677,7 @@
                 if (res.finished) {
                     toast(`🎉 ПОБЕДА! +${res.winAmount}⭐`);
                     minesActive = false;
-                    renderMines(false);
+                    renderMinesBoard(false);
                     document.getElementById('minesBtn').innerText = "💣 Новая игра";
                     document.getElementById('minesBtn').classList.remove('btn-cashout');
                     document.getElementById('minesCash').disabled = true;
@@ -394,14 +686,14 @@
             }
         });
     }
-
+    
     function minesCashout() {
         if (!minesActive) return;
         socket.emit('mines_cashout', { telegram_id: uid }, (res) => {
             if (res?.success) {
                 toast(`💰 Выигрыш: ${res.winAmount}⭐`);
                 minesActive = false;
-                renderMines(false);
+                renderMinesBoard(false);
                 document.getElementById('minesBtn').innerText = "💣 Новая игра";
                 document.getElementById('minesBtn').classList.remove('btn-cashout');
                 document.getElementById('minesCash').disabled = true;
@@ -409,9 +701,9 @@
             }
         });
     }
-
-    function renderMines(active) {
-        const board = document.getElementById('minesGrid');
+    
+    function renderMinesBoard(active) {
+        const board = document.getElementById('minesBoard');
         board.innerHTML = '';
         for (let i = 0; i < 25; i++) {
             const cell = document.createElement('div');
@@ -423,7 +715,7 @@
             board.appendChild(cell);
         }
     }
-
+    
     // ========== РУЛЕТКА ==========
     function rouletteBetAdj(type) {
         if (type === 'min') rouletteBet = 10;
@@ -433,39 +725,36 @@
         if (rouletteBet > stars) rouletteBet = stars;
         updateUI();
     }
-
+    
     function placeRoulette() {
         if (rouletteSpinning) { toast("Рулетка крутится"); return; }
         if (stars < rouletteBet) { toast("Не хватает звёзд"); return; }
         socket.emit('roulette_place_bet', { telegram_id: uid, name: pname, amount: rouletteBet, avatar: '👤' }, (res) => { if (res?.success) refreshBalance(); else toast(res?.error); });
     }
-
+    
     function spinRoulette() { socket.emit('roulette_spin'); }
-
-    function renderRoulette() {
-        const cont = document.getElementById('rouletteBets');
+    
+    function renderRouletteBets() {
+        const cont = document.getElementById('rouletteBetsList');
         const totalSpan = document.getElementById('rouletteTotal');
         if (!cont) return;
         const total = rouletteBets.reduce((s, b) => s + b.amount, 0);
         if (totalSpan) totalSpan.innerText = `Общая ставка: ${total}⭐`;
         if (!rouletteBets.length) { cont.innerHTML = '<div class="empty">Нет ставок</div>'; return; }
-        cont.innerHTML = rouletteBets.map(b => `<div class="player-row"><span>${b.name}</span><span>⭐ ${b.amount}</span><span style="color:#00e699;">шанс ${total ? ((b.amount / total) * 100).toFixed(1) : 0}%</span></div>`).join('');
+        cont.innerHTML = rouletteBets.map(b => `<div class="bet-item"><span>${b.name}</span><span>⭐ ${b.amount}</span><span style="color:#00e699;">шанс ${total ? ((b.amount / total) * 100).toFixed(1) : 0}%</span></div>`).join('');
     }
-
-    socket.on('roulette_update', (b) => { rouletteBets = b; renderRoulette(); });
+    
+    socket.on('roulette_update', (b) => { rouletteBets = b; renderRouletteBets(); });
     socket.on('roulette_spinning', () => { rouletteSpinning = true; toast("🎡 Рулетка крутится..."); });
     socket.on('roulette_result', (d) => { rouletteSpinning = false; if (d.winner) toast(`🏆 Победитель: ${d.winner.name}! +${d.total}⭐`); else toast("Ничья"); refreshBalance(); });
-
+    
     // ========== ЛИДЕРЫ ==========
     socket.on('leaderboard_data', (data) => {
         const cont = document.getElementById('leaderboardContent');
-        if (!data || !data.length) {
-            cont.innerHTML = '<div class="empty">🏆 Таблица лидеров пуста</div>';
-        } else {
-            cont.innerHTML = data.map((u, i) => `<div style="display: flex; justify-content: space-between; padding: 10px; background: #101935; border-radius: 12px; margin-bottom: 6px;"><span>${i+1}. ${u.name}</span><span style="color: #ffaa00;">⭐ ${u.turnover}</span></div>`).join('');
-        }
+        if (!data || !data.length) { cont.innerHTML = '<div class="empty">🏆 Таблица лидеров пуста</div>'; return; }
+        cont.innerHTML = data.map((u, i) => `<div style="display: flex; justify-content: space-between; padding: 10px; background: #101935; border-radius: 12px; margin-bottom: 6px;"><span>${i+1}. ${u.name}</span><span style="color: #ffaa00;">⭐ ${u.turnover}</span></div>`).join('');
     });
-
+    
     // ========== НАВИГАЦИЯ ==========
     function tab(name, el) {
         document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
@@ -474,15 +763,14 @@
         document.getElementById(name).classList.add('active');
         if (name === 'leaders') socket.emit('get_leaderboard');
     }
-
+    
     function goTo(game) {
         document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
         document.getElementById(game).classList.add('active');
         if (game === 'crash') socket.emit('rocket_get_history');
-        if (game === 'mines') renderMines(false);
+        if (game === 'mines') renderMinesBoard(false);
     }
-
-    // Инициализация
+    
     switchSubtab('balance', document.querySelector('.subtab-btn.active'));
     setInterval(refreshBalance, 3000);
     socket.emit('rocket_get_history');
