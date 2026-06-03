@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>DadTon - Игры</title>
+    <title>DadTon - Ракета</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="/socket.io/socket.io.js"></script>
     <style>
@@ -56,7 +56,6 @@
         input:checked + .auto-slider { background-color: #00e699; }
         input:checked + .auto-slider:before { transform: translateX(26px); }
         .auto-value-input { background: #0a1128; border: 1px solid #2a3450; color: #ffaa00; padding: 8px 12px; border-radius: 30px; width: 80px; text-align: center; font-weight: 700; }
-        .auto-value-input.hidden { display: none; }
         
         .leaderboard-list { display: flex; flex-direction: column; gap: 8px; }
         .leader-item { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-radius: 14px; background: #101935; }
@@ -86,7 +85,7 @@
         .history-amount { font-size: 20px; font-weight: 800; }
         .history-amount.plus { color: #00e699; }
         .history-amount.minus { color: #ff4d73; }
-        .roulette-container { display: flex; justify-content: center; margin: 20px 0; }
+        .roulette-container { display: flex; justify-content: center; margin: 20px 0; position: relative; }
         .roulette-wheel { width: 200px; height: 200px; border-radius: 50%; transition: transform 3s cubic-bezier(0.2, 0.8, 0.3, 1); }
         .roulette-pointer { position: absolute; top: -20px; left: 50%; transform: translateX(-50%); font-size: 30px; filter: drop-shadow(0 0 5px black); }
         
@@ -135,7 +134,7 @@
                 <label class="auto-switch"><input type="checkbox" id="autoCashoutToggle"><span class="auto-slider"></span></label>
             </div>
         </div>
-        <div class="btn" id="crashBtn">💰 Сделать ставку</div>
+        <div class="btn" id="crashBtn" onclick="rocketAction()">💰 Сделать ставку</div>
     </div>
     <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
         <span>👥 Участники</span>
@@ -145,7 +144,7 @@
 </div>
 
 <div id="mines" class="screen"><div class="widget"><div class="panel-label">Ставка</div><div class="panel-value">⭐ <span id="minesBet">20</span></div><div class="preset-row"><div class="preset" onclick="minesBetAdj('half')">½</div><div class="preset" onclick="minesBetAdj('double')">×2</div><div class="preset" onclick="minesBetAdj('max')">MAX</div></div><div class="btn" id="minesBtn" onclick="minesClick()">💣 Новая игра</div></div><div class="mines-grid" id="minesBoard"></div><div style="text-align:center; margin:8px 0;">Множитель: <span id="minesMult">1.00x</span></div><div class="btn" id="minesCash" disabled onclick="minesCashout()" style="background:#2a3448;">💰 Забрать</div></div>
-<div id="roulette" class="screen"><div class="roulette-container"><div style="position:relative;"><div class="roulette-pointer">▼</div><canvas id="rouletteCanvas" width="200" height="200" class="roulette-wheel"></canvas></div></div><div class="widget"><div class="panel-label">Сумма ставки</div><div class="panel-value">⭐ <span id="rouletteBet">10</span></div><div class="preset-row"><div class="preset" onclick="rouletteBetAdj('min')">MIN</div><div class="preset" onclick="rouletteBetAdj('add')">+10</div><div class="preset" onclick="rouletteBetAdj('max')">MAX</div></div><div class="btn" onclick="placeRoulette()">📥 Сделать ставку</div><div class="btn" style="margin-top:8px;" onclick="spinRoulette()">🎲 КРУТИТЬ</div></div><div style="display:flex; justify-content:space-between;"><span>Участники</span><span id="rouletteTotal">Общая ставка: 0⭐</span></div><div class="bets-container" id="rouletteBetsList"></div></div>
+<div id="roulette" class="screen"><div class="roulette-container"><div class="roulette-pointer">▼</div><canvas id="rouletteCanvas" width="200" height="200" class="roulette-wheel"></canvas></div><div class="widget"><div class="panel-label">Сумма ставки</div><div class="panel-value">⭐ <span id="rouletteBet">10</span></div><div class="preset-row"><div class="preset" onclick="rouletteBetAdj('min')">MIN</div><div class="preset" onclick="rouletteBetAdj('add')">+10</div><div class="preset" onclick="rouletteBetAdj('max')">MAX</div></div><div class="btn" onclick="placeRoulette()">📥 Сделать ставку</div><div class="btn" style="margin-top:8px;" onclick="spinRoulette()">🎲 КРУТИТЬ</div></div><div style="display:flex; justify-content:space-between;"><span>Участники</span><span id="rouletteTotal">Общая ставка: 0⭐</span></div><div class="bets-container" id="rouletteBetsList"></div></div>
 <div id="leaders" class="screen"><div class="leaderboard-list" id="leaderboardList"></div></div>
 <div id="profile" class="screen"><div class="widget" style="text-align:center;"><div class="profile-avatar" id="profileAvatar">👤</div><div style="font-weight:800; font-size:20px;" id="profName">Игрок</div><div style="font-size:12px; color:#6b7c96;" id="profUser">@user</div><div class="profile-stats"><div class="stat-card"><div class="panel-label">🎮 Игр</div><div class="stat-value" id="profGames">0</div></div><div class="stat-card"><div class="panel-label">⭐ Оборот</div><div class="stat-value" id="profTurn">0</div></div><div class="stat-card"><div class="panel-label">🏆 Побед</div><div class="stat-value" id="profWins">0</div></div><div class="stat-card"><div class="panel-label">💀 Винрейт</div><div class="stat-value" id="profWr">0%</div></div></div></div><div class="profile-subtab-bar"><button class="subtab-btn" onclick="switchSubtab('games', this)">Мои игры</button><button class="subtab-btn active" onclick="switchSubtab('refs', this)">Рефералы</button></div><div id="profileContent"></div></div>
 
@@ -170,7 +169,6 @@
     
     // Rocket state
     let currentBet = 10;
-    let hasActiveBet = false;
     let myBet = null;
     let autoEnabled = false;
     let autoValue = 1.5;
@@ -219,30 +217,29 @@
         cont.innerHTML = betsList.map(b => `<div class="bet-item"><span><div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#f59e0b,#ef4444);display:inline-flex;align-items:center;justify-content:center;margin-right:8px;overflow:hidden;">${getAvatarHtml(b.avatar, b.name)}</div>${b.name}</span><span>⭐ ${b.amount}</span>${b.cashedAt ? `<span style="color:#00e699;">✅ ${b.cashedAt.toFixed(2)}x</span>` : '<span style="color:#f59e0b;">⏳</span>'}</div>`).join('');
     }
     
-    // ========== ROCKET BUTTON LOGIC ==========
+    // ========== ROCKET ACTIONS ==========
     function updateRocketButton() {
         const btn = document.getElementById('crashBtn');
         if(!btn) return;
         btn.classList.remove('btn-cancel', 'btn-cashout');
-        if(!gameActive && countdownSec === -1 && !hasActiveBet) {
+        
+        if(!myBet && !gameActive && countdownSec === -1) {
             btn.innerText = "💰 Сделать ставку";
-            btn.onclick = () => placeBet();
-        } else if(countdownSec > 0 && hasActiveBet) {
+            btn.style.background = "#0098ea";
+        } else if(myBet && !gameActive && countdownSec > 0) {
             btn.innerText = "❌ Отмена";
             btn.classList.add('btn-cancel');
-            btn.onclick = () => cancelBet();
-        } else if(gameActive && hasActiveBet && myBet && !myBet.cashed) {
+        } else if(myBet && gameActive && !myBet.cashed) {
             btn.innerText = "💸 Забрать";
             btn.classList.add('btn-cashout');
-            btn.onclick = () => cashout();
         } else {
             btn.innerText = "⏳ Ожидание";
-            btn.onclick = () => toast("Сейчас нельзя сделать ставку");
+            btn.style.background = "#2a3448";
         }
     }
     
     function changeBet(type) {
-        if(hasActiveBet) { toast("Нельзя менять ставку после её создания"); return; }
+        if(myBet) { toast("Нельзя менять ставку после её создания"); return; }
         if(type === 'min') currentBet = 10;
         if(type === 'add') currentBet += 10;
         if(type === 'max') currentBet = stars;
@@ -251,14 +248,29 @@
         updateUI();
     }
     
+    function rocketAction() {
+        const btn = document.getElementById('crashBtn');
+        const text = btn.innerText;
+        
+        if(text === "💰 Сделать ставку") {
+            placeBet();
+        } else if(text === "❌ Отмена") {
+            cancelBet();
+        } else if(text === "💸 Забрать") {
+            cashout();
+        } else {
+            toast("Сейчас нельзя сделать ставку");
+        }
+    }
+    
     function placeBet() {
-        if(hasActiveBet) { toast("У вас уже есть ставка"); return; }
+        if(myBet) { toast("У вас уже есть ставка"); return; }
         if(stars < currentBet) { toast("Не хватает звёзд"); return; }
         autoEnabled = document.getElementById('autoCashoutToggle').checked;
         autoValue = parseFloat(document.getElementById('autoCashoutVal').value);
+        
         socket.emit('rocket_place_bet', { telegram_id: uid, name: pname, amount: currentBet, autoCashout: autoValue, avatar: userAvatarUrl || pname.charAt(0) }, (res) => {
             if(res?.success) {
-                hasActiveBet = true;
                 myBet = { amount: currentBet, autoCashout: autoValue, cashed: false };
                 refreshBalance();
                 updateRocketButton();
@@ -267,11 +279,10 @@
     }
     
     function cancelBet() {
-        if(!hasActiveBet) return;
+        if(!myBet) return;
         socket.emit('rocket_cancel_bet', { telegram_id: uid }, (res) => {
             if(res?.success) {
                 toast(`Ставка отменена. Возвращено ${res.amount}⭐`);
-                hasActiveBet = false;
                 myBet = null;
                 refreshBalance();
                 updateRocketButton();
@@ -280,7 +291,7 @@
     }
     
     function cashout() {
-        if(gameActive && hasActiveBet && myBet && !myBet.cashed) {
+        if(gameActive && myBet && !myBet.cashed) {
             socket.emit('rocket_cashout', { telegram_id: uid, name: pname });
         }
     }
@@ -319,7 +330,7 @@
     socket.on('rocket_multiplier', (m) => {
         currentMultiplier = m;
         document.getElementById('crashMult').innerHTML = m.toFixed(2) + 'x';
-        if(gameActive && hasActiveBet && myBet && !myBet.cashed && autoEnabled && currentMultiplier >= autoValue - 0.005) {
+        if(gameActive && myBet && !myBet.cashed && autoEnabled && currentMultiplier >= autoValue - 0.005) {
             cashout();
         }
     });
@@ -332,7 +343,6 @@
             myBet = null;
             refreshBalance();
         }
-        hasActiveBet = false;
         crashHistory.unshift(mult.toFixed(2));
         if(crashHistory.length > 10) crashHistory.pop();
         const hist = document.getElementById('crashHistory');
@@ -350,7 +360,7 @@
             if(gameHistory.length > 10) gameHistory.pop();
             refreshBalance();
             if(myBet) myBet.cashed = true;
-            hasActiveBet = false;
+            myBet = null;
         }
         const bb = betsList.find(b => b.name === d.name && !b.cashedAt);
         if(bb) { bb.cashedAt = d.multiplier; bb.winAmount = d.win; }
@@ -365,7 +375,7 @@
     });
     socket.emit('rocket_get_history');
     
-    // ========== MINES (simple) ==========
+    // ========== MINES ==========
     function minesBetAdj(t) { if(t==='half') minesBet=Math.floor(minesBet/2); if(t==='double') minesBet*=2; if(t==='max') minesBet=stars; if(minesBet<10) minesBet=10; if(minesBet>stars) minesBet=stars; updateUI(); }
     function minesClick() { minesActive ? minesCashout() : startMines(); }
     function startMines() { if(stars<minesBet) { toast("Не хватает звёзд"); return; } socket.emit('mines_start', { telegram_id: uid, betAmount: minesBet, minesCount:5 }, (res) => { if(res?.success) { minesActive=true; minesBetAmount=minesBet; minesRevealed=0; minesMult=1; document.getElementById('minesMult').innerText='1.00x'; document.getElementById('minesBtn').innerText="💰 Забрать"; document.getElementById('minesBtn').classList.add('btn-cashout'); document.getElementById('minesCash').disabled=false; renderMinesBoard(true); refreshBalance(); } else toast(res?.error||'Ошибка'); }); }
