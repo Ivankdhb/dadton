@@ -22,10 +22,12 @@
         .header {
             display: flex;
             justify-content: space-between;
+            align-items: center;
             padding: 12px 16px;
             background: #0a1128;
             border-bottom: 1px solid rgba(255,255,255,0.05);
         }
+        .logo { font-size: 20px; font-weight: 800; }
         .balance {
             background: rgba(255,255,255,0.05);
             padding: 4px 14px;
@@ -81,11 +83,11 @@
             font-weight: 700;
             font-size: 14px;
             cursor: pointer;
+            transition: 0.1s;
         }
-        .btn-cashout {
-            background: #00e699;
-            color: black;
-        }
+        .btn:active { transform: scale(0.98); }
+        .btn-cashout { background: #00e699; color: black; }
+        .btn-waiting { background: #2a3448; color: #6b7c96; cursor: not-allowed; pointer-events: none; }
         .preset-row {
             display: flex;
             gap: 8px;
@@ -100,6 +102,7 @@
             cursor: pointer;
             font-weight: 700;
         }
+        .preset:active { transform: scale(0.95); }
         .crash-display {
             background: radial-gradient(circle, #1b1947, #101935);
             height: 140px;
@@ -114,12 +117,8 @@
             font-size: 44px;
             font-weight: 900;
         }
-        .multiplier.flying {
-            color: #00e699;
-        }
-        .multiplier.crashed {
-            color: #ff4d73;
-        }
+        .multiplier.flying { color: #00e699; }
+        .multiplier.crashed { color: #ff4d73; }
         .countdown-big {
             font-size: 36px;
             font-weight: 900;
@@ -178,16 +177,9 @@
             color: #6b7c96;
             cursor: pointer;
         }
-        .nav-item.active {
-            color: #00e699;
-        }
-        .nav-icon {
-            font-size: 20px;
-        }
-        .nav-label {
-            font-size: 9px;
-            font-weight: 700;
-        }
+        .nav-item.active { color: #00e699; }
+        .nav-icon { font-size: 20px; }
+        .nav-label { font-size: 9px; font-weight: 700; }
         .toast {
             position: fixed;
             bottom: 70px;
@@ -224,11 +216,7 @@
             align-items: center;
             gap: 12px;
         }
-        .auto-row-left {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
+        .auto-row-left { display: flex; align-items: center; gap: 12px; }
         .auto-icon { font-size: 20px; }
         .auto-label { font-weight: 600; font-size: 14px; }
         .auto-switch { position: relative; display: inline-block; width: 52px; height: 26px; }
@@ -282,7 +270,7 @@
 <body>
 
 <header class="header">
-    <div style="font-weight: 800;">🎲 DadTon</div>
+    <div class="logo">🎲 DadTon</div>
     <div class="balance">⭐ <span id="balance">0</span></div>
 </header>
 
@@ -424,7 +412,8 @@
     
     let stars = 1000, turnover = 0, games = 0, wins = 0;
     let referralCount = 0, referralEarned = 0;
-    let hasActiveBet = false; // Блокировка нескольких ставок
+    let hasActiveBet = false;
+    let isWaitingForNextRound = false;
     
     let crashBet = 10, crashActive = false, crashMyBet = null, crashBets = [], currentMultiplier = 1;
     let autoCashoutEnabled = false, autoCashoutValue = 1.5;
@@ -458,6 +447,11 @@
     socket.emit('register', { telegram_id: uid, name: pname, avatar: userAvatar }, (res) => { if (res?.success) { stars = res.stars; updateUI(); } });
     
     function toggleAutoCashout() {
+        if (crashActive) {
+            toast("Нельзя менять настройки во время игры!");
+            document.getElementById('autoCashoutToggle').checked = autoCashoutEnabled;
+            return;
+        }
         autoCashoutEnabled = document.getElementById('autoCashoutToggle').checked;
         const input = document.getElementById('autoCashoutVal');
         if (autoCashoutEnabled) input.classList.remove('hidden');
@@ -488,7 +482,17 @@
         updateUI();
     }
     
-    function crashClick() { crashActive ? cashoutCrash() : placeCrash(); }
+    function crashClick() { 
+        if (isWaitingForNextRound) {
+            toast("Дождитесь следующего раунда!");
+            return;
+        }
+        if (crashActive) {
+            cashoutCrash();
+        } else {
+            placeCrash();
+        }
+    }
     
     function placeCrash() {
         if (hasActiveBet) { toast("У вас уже есть активная ставка в этом раунде!"); return; }
@@ -496,7 +500,12 @@
         autoCashoutEnabled = document.getElementById('autoCashoutToggle').checked;
         autoCashoutValue = parseFloat(document.getElementById('autoCashoutVal').value);
         
+        const btn = document.getElementById('crashBtn');
+        btn.disabled = true;
+        btn.innerText = "⏳ Обработка...";
+        
         socket.emit('rocket_place_bet', { telegram_id: uid, name: pname, amount: crashBet, autoCashout: autoCashoutValue, avatar: userAvatar }, (res) => {
+            btn.disabled = false;
             if (res?.success) {
                 hasActiveBet = true;
                 crashMyBet = { amount: crashBet, autoCashout: autoCashoutValue, cashed: false };
@@ -507,7 +516,11 @@
         });
     }
     
-    function cashoutCrash() { if (crashActive && crashMyBet && !crashMyBet.cashed) { socket.emit('rocket_cashout', { telegram_id: uid, name: pname }); } }
+    function cashoutCrash() { 
+        if (crashActive && crashMyBet && !crashMyBet.cashed) { 
+            socket.emit('rocket_cashout', { telegram_id: uid, name: pname });
+        } 
+    }
     
     function renderCrashBets() {
         const cont = document.getElementById('crashBets');
@@ -523,17 +536,21 @@
         if (s > 0) {
             if (statusDiv) { multDiv.style.display = 'none'; statusDiv.style.display = 'block'; statusDiv.innerHTML = s; }
             if (el) el.innerHTML = `⏳ Старт через ${s}`;
+            isWaitingForNextRound = true;
         } else if (s === 0) {
             if (el) el.innerHTML = '🚀 В игре';
             if (statusDiv) statusDiv.style.display = 'none';
             if (multDiv) multDiv.style.display = 'block';
+            isWaitingForNextRound = false;
         } else {
             if (el && !crashActive) el.innerHTML = '● Ожидание ставок';
         }
     });
     
     socket.on('rocket_start', () => { 
-        crashActive = true; currentMultiplier = 1; document.getElementById('crashMult').innerHTML = '1.00x'; document.getElementById('crashMult').className = 'multiplier flying';
+        crashActive = true; currentMultiplier = 1; 
+        document.getElementById('crashMult').innerHTML = '1.00x'; 
+        document.getElementById('crashMult').className = 'multiplier flying';
         document.getElementById('crashStatus').innerHTML = '🚀 В игре';
         const statusDiv = document.getElementById('crashStatusText'); if (statusDiv) statusDiv.style.display = 'none';
         const multDiv = document.getElementById('crashMult'); if (multDiv) multDiv.style.display = 'block';
@@ -545,26 +562,47 @@
     });
     
     socket.on('rocket_crash', (multiplier) => { 
-        crashActive = false; hasActiveBet = false;
+        crashActive = false; 
         if (crashMyBet && !crashMyBet.cashed) {
             gameHistory.unshift({ game: 'Ракета', amount: -crashMyBet.amount, time: new Date().toLocaleTimeString() });
             if (gameHistory.length > 10) gameHistory.pop();
             crashMyBet = null;
             refreshBalance();
         }
+        hasActiveBet = false;
         crashHistoryData.unshift(multiplier.toFixed(2));
         if (crashHistoryData.length > 10) crashHistoryData.pop();
         const historyContainer = document.getElementById('crashHistory');
         if (historyContainer) historyContainer.innerHTML = crashHistoryData.map(m => `<div class="history-item">${m}x</div>`).join('');
         document.getElementById('crashMult').className = 'multiplier crashed'; document.getElementById('crashMult').innerHTML = 'ВЗРЫВ!';
-        document.getElementById('crashBtn').innerText = "💰 Сделать ставку"; document.getElementById('crashBtn').classList.remove('btn-cashout'); 
+        document.getElementById('crashBtn').innerText = "💰 Сделать ставку"; 
+        document.getElementById('crashBtn').classList.remove('btn-cashout');
+        document.getElementById('crashBtn').classList.remove('btn-waiting');
         setTimeout(() => { refreshBalance(); }, 500);
     });
     
     socket.on('rocket_bet_placed', (b) => { crashBets.push({ ...b, cashedAt: null }); renderCrashBets(); refreshBalance(); });
     socket.on('rocket_cashout_done', (d) => { 
-        if (d.name === pname) { gameHistory.unshift({ game: 'Ракета', amount: d.win, time: new Date().toLocaleTimeString() }); if (gameHistory.length > 10) gameHistory.pop(); refreshBalance(); if (crashMyBet) crashMyBet.cashed = true; hasActiveBet = false; } 
-        const bb = crashBets.find(b => b.name === d.name && !b.cashedAt); if (bb) { bb.cashedAt = d.multiplier; bb.winAmount = d.win; } renderCrashBets(); 
+        if (d.name === pname) { 
+            gameHistory.unshift({ game: 'Ракета', amount: d.win, time: new Date().toLocaleTimeString() }); 
+            if (gameHistory.length > 10) gameHistory.pop(); 
+            refreshBalance(); 
+            if (crashMyBet) crashMyBet.cashed = true; 
+            hasActiveBet = false;
+            // После кэшаута — кнопка становится серой "Ожидание"
+            document.getElementById('crashBtn').innerText = "⏳ Ожидание";
+            document.getElementById('crashBtn').classList.add('btn-waiting');
+            document.getElementById('crashBtn').classList.remove('btn-cashout');
+            setTimeout(() => {
+                if (!crashActive) {
+                    document.getElementById('crashBtn').innerText = "💰 Сделать ставку";
+                    document.getElementById('crashBtn').classList.remove('btn-waiting');
+                }
+            }, 1000);
+        } 
+        const bb = crashBets.find(b => b.name === d.name && !b.cashedAt); 
+        if (bb) { bb.cashedAt = d.multiplier; bb.winAmount = d.win; } 
+        renderCrashBets(); 
     });
     socket.on('rocket_bets_clear', () => { crashBets = []; renderCrashBets(); });
     
@@ -735,12 +773,17 @@
     switchSubtab('refs', document.querySelector('.subtab-btn.active'));
     setInterval(refreshBalance, 3000);
     updateUI();
-    toggleAutoCashout();
     
+    // Загружаем историю иксов при запуске
     socket.on('rocket_history_data', (d) => {
         if (d && d.length) { crashHistoryData = d.map(item => item.multiplier.toFixed(2)); if (crashHistoryData.length > 10) crashHistoryData = crashHistoryData.slice(0, 10); const historyContainer = document.getElementById('crashHistory'); if (historyContainer) historyContainer.innerHTML = crashHistoryData.map(m => `<div class="history-item">${m}x</div>`).join(''); }
     });
     socket.emit('rocket_get_history');
+    
+    // Устанавливаем начальное состояние переключателя автовывода
+    autoCashoutEnabled = false;
+    document.getElementById('autoCashoutToggle').checked = false;
+    toggleAutoCashout();
 </script>
 </body>
 </html>
