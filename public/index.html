@@ -173,8 +173,7 @@
     let autoEnabled = false;
     let autoValue = 1.5;
     let betsList = [];
-    let gameActive = false;
-    let countdownSec = -1;
+    let isFlying = false;
     let crashHistory = [];
     let currentMultiplier = 1;
     
@@ -218,21 +217,27 @@
     }
     
     // ========== ROCKET ACTIONS ==========
-    function updateRocketButton() {
+    function updateButtonUI() {
         const btn = document.getElementById('crashBtn');
         if(!btn) return;
         btn.classList.remove('btn-cancel', 'btn-cashout');
         
-        if(!myBet && !gameActive && countdownSec === -1) {
+        // Если нет активной ставки и ракета не летит
+        if(!myBet && !isFlying) {
             btn.innerText = "💰 Сделать ставку";
             btn.style.background = "#0098ea";
-        } else if(myBet && !gameActive && countdownSec > 0) {
+        }
+        // Если есть ставка и ракета ещё не взлетела (идёт отсчёт)
+        else if(myBet && !isFlying) {
             btn.innerText = "❌ Отмена";
             btn.classList.add('btn-cancel');
-        } else if(myBet && gameActive && !myBet.cashed) {
+        }
+        // Если есть ставка и ракета летит
+        else if(myBet && isFlying && !myBet.cashed) {
             btn.innerText = "💸 Забрать";
             btn.classList.add('btn-cashout');
-        } else {
+        }
+        else {
             btn.innerText = "⏳ Ожидание";
             btn.style.background = "#2a3448";
         }
@@ -273,7 +278,7 @@
             if(res?.success) {
                 myBet = { amount: currentBet, autoCashout: autoValue, cashed: false };
                 refreshBalance();
-                updateRocketButton();
+                updateButtonUI();
             } else toast(res?.error || 'Ошибка');
         });
     }
@@ -285,58 +290,57 @@
                 toast(`Ставка отменена. Возвращено ${res.amount}⭐`);
                 myBet = null;
                 refreshBalance();
-                updateRocketButton();
+                updateButtonUI();
             } else toast(res?.error || "Не удалось отменить");
         });
     }
     
     function cashout() {
-        if(gameActive && myBet && !myBet.cashed) {
+        if(isFlying && myBet && !myBet.cashed) {
             socket.emit('rocket_cashout', { telegram_id: uid, name: pname });
         }
     }
     
     // ========== SOCKET EVENTS ==========
     socket.on('rocket_countdown', (s) => {
-        countdownSec = s;
         const el = document.getElementById('crashStatus');
         const statusDiv = document.getElementById('crashStatusText');
         const multDiv = document.getElementById('crashMult');
         if(s > 0) {
-            gameActive = false;
+            isFlying = false;
             if(statusDiv) { multDiv.style.display = 'none'; statusDiv.style.display = 'block'; statusDiv.innerHTML = s; }
             if(el) el.innerHTML = `⏳ Старт через ${s}`;
         } else if(s === 0) {
-            gameActive = true;
+            isFlying = true;
             if(el) el.innerHTML = '🚀 В игре';
             if(statusDiv) statusDiv.style.display = 'none';
             if(multDiv) multDiv.style.display = 'block';
         } else {
-            gameActive = false;
-            if(el && !gameActive) el.innerHTML = '● Ожидание ставок';
+            isFlying = false;
+            if(el && !isFlying) el.innerHTML = '● Ожидание ставок';
             if(statusDiv) statusDiv.style.display = 'none';
             if(multDiv) multDiv.style.display = 'block';
         }
-        updateRocketButton();
+        updateButtonUI();
     });
     
     socket.on('rocket_start', () => {
-        gameActive = true;
+        isFlying = true;
         document.getElementById('crashMult').innerHTML = '1.00x';
         document.getElementById('crashMult').className = 'multiplier flying';
-        updateRocketButton();
+        updateButtonUI();
     });
     
     socket.on('rocket_multiplier', (m) => {
         currentMultiplier = m;
         document.getElementById('crashMult').innerHTML = m.toFixed(2) + 'x';
-        if(gameActive && myBet && !myBet.cashed && autoEnabled && currentMultiplier >= autoValue - 0.005) {
+        if(isFlying && myBet && !myBet.cashed && autoEnabled && currentMultiplier >= autoValue - 0.005) {
             cashout();
         }
     });
     
     socket.on('rocket_crash', (mult) => {
-        gameActive = false;
+        isFlying = false;
         if(myBet && !myBet.cashed) {
             gameHistory.unshift({ game: 'Ракета', amount: -myBet.amount, time: new Date().toLocaleTimeString() });
             if(gameHistory.length > 10) gameHistory.pop();
@@ -350,7 +354,7 @@
         document.getElementById('crashMult').className = 'multiplier crashed';
         document.getElementById('crashMult').innerHTML = 'ВЗРЫВ!';
         setTimeout(refreshBalance, 500);
-        updateRocketButton();
+        updateButtonUI();
     });
     
     socket.on('rocket_bet_placed', (b) => { betsList.push({ ...b, cashedAt: null }); renderBets(); refreshBalance(); });
@@ -365,7 +369,7 @@
         const bb = betsList.find(b => b.name === d.name && !b.cashedAt);
         if(bb) { bb.cashedAt = d.multiplier; bb.winAmount = d.win; }
         renderBets();
-        updateRocketButton();
+        updateButtonUI();
     });
     socket.on('rocket_bets_clear', () => { betsList = []; renderBets(); });
     socket.on('rocket_bet_cancelled', (data) => { betsList = betsList.filter(b => b.name !== data.name); renderBets(); });
@@ -407,7 +411,7 @@
     });
     
     function tab(name, el) { document.querySelectorAll('.nav-item').forEach(i=>i.classList.remove('active')); el.classList.add('active'); document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(name).classList.add('active'); if(name==='leaders') socket.emit('get_leaderboard'); if(name==='roulette') drawRouletteWheel(); }
-    function goTo(game) { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(game).classList.add('active'); if(game==='mines') renderMinesBoard(false); if(game==='roulette') drawRouletteWheel(); if(game==='crash') updateRocketButton(); }
+    function goTo(game) { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(game).classList.add('active'); if(game==='mines') renderMinesBoard(false); if(game==='roulette') drawRouletteWheel(); if(game==='crash') updateButtonUI(); }
     function loadReferralStats() { socket.emit('get_referral_stats', uid, (data) => { if(data) { referralCount=data.count||0; referralEarned=data.earned||0; const rc=document.getElementById('refCount'); const re=document.getElementById('refEarned'); if(rc) rc.innerText=referralCount; if(re) re.innerText=referralEarned; } }); }
     function switchSubtab(tab, btn) { document.querySelectorAll('.subtab-btn').forEach(b=>b.classList.remove('active')); if(btn) btn.classList.add('active'); const container = document.getElementById('profileContent'); if(tab==='games') { if(gameHistory.length===0) container.innerHTML='<div class="empty">🎮 Сыграйте в игры, чтобы увидеть историю</div>'; else container.innerHTML=gameHistory.map(h=>`<div class="history-card"><div class="history-game">${h.game}</div><div class="history-amount ${h.amount>0?'plus':'minus'}">${h.amount>0?'+':''}${h.amount}⭐</div><div style="font-size:11px; color:#6b7c96;">${h.time}</div></div>`).join(''); } else if(tab==='refs') { const refLink=`https://t.me/share/url?url=DadTon&text=Играй со мной в DadTon! Реферальный код: ${uid.slice(-6)}`; container.innerHTML=`<div class="ref-stats"><div class="ref-stat-card"><div class="panel-label">👥 Рефералы</div><div class="ref-value" id="refCount">${referralCount}</div></div><div class="ref-stat-card"><div class="panel-label">💰 Заработано</div><div class="ref-value" id="refEarned">${referralEarned}</div></div></div><div class="ref-link-box" style="background:#1e295d; border-radius:12px; padding:12px;"><span class="ref-url" style="font-size:11px; word-break:break-all;">${refLink}</span><button class="copy-btn" style="margin-top:8px; width:100%; background:#0098ea; border:none; padding:8px; border-radius:20px; color:white;" onclick="navigator.clipboard.writeText('${refLink}'); toast('Ссылка скопирована!')">Копировать ссылку</button></div><div class="empty" style="margin-top:12px;">💡 За каждого приглашённого друга вы получаете 10% от его оборота!</div>`; } }
     
@@ -415,7 +419,7 @@
     switchSubtab('refs', document.querySelector('.subtab-btn.active'));
     setInterval(refreshBalance, 3000);
     updateUI();
-    setTimeout(() => { updateRocketButton(); }, 500);
+    setTimeout(() => { updateButtonUI(); }, 500);
 </script>
 </body>
 </html>
