@@ -7,217 +7,48 @@
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="/socket.io/socket.io.js"></script>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            user-select: none;
-        }
-        body {
-            background: #0a1128;
-            color: white;
-            font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
-            padding-bottom: 65px;
-        }
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 12px 16px;
-            background: #0a1128;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
-        }
+        /* (стили такие же, как в предыдущей версии, оставляем без изменений) */
+        * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; }
+        body { background: #0a1128; color: white; font-family: system-ui, sans-serif; padding-bottom: 65px; }
+        .header { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: #0a1128; border-bottom: 1px solid rgba(255,255,255,0.05); }
         .logo { font-size: 20px; font-weight: 800; }
-        .balance {
-            background: rgba(255,255,255,0.05);
-            padding: 4px 14px;
-            border-radius: 30px;
-            color: #ffaa00;
-            font-weight: 700;
-        }
-        .screen {
-            display: none;
-            padding: 12px;
-        }
-        .screen.active {
-            display: block;
-        }
-        .game-card {
-            background: linear-gradient(135deg, #ff5277, #ff2a55);
-            border-radius: 16px;
-            padding: 16px;
-            margin-bottom: 12px;
-            position: relative;
-            cursor: pointer;
-        }
-        .game-card .title {
-            font-size: 18px;
-            font-weight: 800;
-        }
-        .game-card .art {
-            position: absolute;
-            right: 16px;
-            bottom: 8px;
-            font-size: 40px;
-        }
-        .card-mines {
-            background: linear-gradient(135deg, #a78bfa, #7c3aed);
-        }
-        .card-roulette {
-            background: linear-gradient(135deg, #ffd043, #ffaa00);
-            color: #3d2700;
-        }
-        .widget {
-            background: #101935;
-            border-radius: 16px;
-            padding: 16px;
-            margin-bottom: 12px;
-        }
-        .btn {
-            background: #0098ea;
-            width: 100%;
-            padding: 14px;
-            border: none;
-            border-radius: 14px;
-            color: white;
-            font-weight: 700;
-            font-size: 14px;
-            cursor: pointer;
-            transition: 0.1s;
-        }
+        .balance { background: rgba(255,255,255,0.05); padding: 4px 14px; border-radius: 30px; color: #ffaa00; font-weight: 700; }
+        .screen { display: none; padding: 12px; }
+        .screen.active { display: block; }
+        .game-card { background: linear-gradient(135deg, #ff5277, #ff2a55); border-radius: 16px; padding: 16px; margin-bottom: 12px; position: relative; cursor: pointer; }
+        .game-card .title { font-size: 18px; font-weight: 800; }
+        .game-card .art { position: absolute; right: 16px; bottom: 8px; font-size: 40px; }
+        .card-mines { background: linear-gradient(135deg, #a78bfa, #7c3aed); }
+        .card-roulette { background: linear-gradient(135deg, #ffd043, #ffaa00); color: #3d2700; }
+        .widget { background: #101935; border-radius: 16px; padding: 16px; margin-bottom: 12px; }
+        .btn { background: #0098ea; width: 100%; padding: 14px; border: none; border-radius: 14px; color: white; font-weight: 700; font-size: 14px; cursor: pointer; transition: 0.1s; }
         .btn:active { transform: scale(0.98); }
         .btn-cancel { background: #ef4444; color: white; }
-        .btn-cancel:hover { background: #dc2626; }
         .btn-cashout { background: #00e699; color: black; }
         .btn-waiting { background: #2a3448; color: #6b7c96; cursor: not-allowed; pointer-events: none; }
-        .preset-row {
-            display: flex;
-            gap: 8px;
-            margin: 12px 0;
-        }
-        .preset {
-            background: #1e295d;
-            padding: 8px;
-            border-radius: 10px;
-            flex: 1;
-            text-align: center;
-            cursor: pointer;
-            font-weight: 700;
-        }
+        .preset-row { display: flex; gap: 8px; margin: 12px 0; }
+        .preset { background: #1e295d; padding: 8px; border-radius: 10px; flex: 1; text-align: center; cursor: pointer; font-weight: 700; }
         .preset:active { transform: scale(0.95); }
-        .crash-display {
-            background: radial-gradient(circle, #1b1947, #101935);
-            height: 140px;
-            border-radius: 16px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 12px;
-        }
-        .multiplier {
-            font-size: 44px;
-            font-weight: 900;
-        }
+        .crash-display { background: radial-gradient(circle, #1b1947, #101935); height: 140px; border-radius: 16px; display: flex; flex-direction: column; align-items: center; justify-content: center; margin-bottom: 12px; }
+        .multiplier { font-size: 44px; font-weight: 900; }
         .multiplier.flying { color: #00e699; }
         .multiplier.crashed { color: #ff4d73; }
-        .countdown-big {
-            font-size: 36px;
-            font-weight: 900;
-            color: #f59e0b;
-        }
-        .history {
-            display: flex;
-            gap: 8px;
-            overflow-x: auto;
-            margin-bottom: 12px;
-        }
-        .history-item {
-            background: #1e295d;
-            padding: 6px 14px;
-            border-radius: 20px;
-            font-size: 13px;
-            font-weight: 600;
-            white-space: nowrap;
-        }
-        .bets-container {
-            max-height: 250px;
-            overflow-y: auto;
-        }
-        .bet-item {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 10px 12px;
-            background: rgba(0,0,0,0.3);
-            border-radius: 50px;
-            margin-bottom: 6px;
-            font-size: 12px;
-        }
-        .empty {
-            text-align: center;
-            padding: 20px;
-            color: #6b7c96;
-        }
-        .bottom-nav {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            height: 56px;
-            background: #101935;
-            display: flex;
-            justify-content: space-around;
-            align-items: center;
-            border-top: 1px solid rgba(255,255,255,0.05);
-        }
-        .nav-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 2px;
-            color: #6b7c96;
-            cursor: pointer;
-        }
+        .countdown-big { font-size: 36px; font-weight: 900; color: #f59e0b; }
+        .history { display: flex; gap: 8px; overflow-x: auto; margin-bottom: 12px; }
+        .history-item { background: #1e295d; padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 600; white-space: nowrap; }
+        .bets-container { max-height: 250px; overflow-y: auto; }
+        .bet-item { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; background: rgba(0,0,0,0.3); border-radius: 50px; margin-bottom: 6px; font-size: 12px; }
+        .empty { text-align: center; padding: 20px; color: #6b7c96; }
+        .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; height: 56px; background: #101935; display: flex; justify-content: space-around; align-items: center; border-top: 1px solid rgba(255,255,255,0.05); }
+        .nav-item { display: flex; flex-direction: column; align-items: center; gap: 2px; color: #6b7c96; cursor: pointer; }
         .nav-item.active { color: #00e699; }
         .nav-icon { font-size: 20px; }
         .nav-label { font-size: 9px; font-weight: 700; }
-        .toast {
-            position: fixed;
-            bottom: 70px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: black;
-            padding: 8px 16px;
-            border-radius: 30px;
-            font-size: 12px;
-            z-index: 200;
-            display: none;
-        }
-        .panel-value {
-            font-size: 24px;
-            font-weight: 800;
-            text-align: center;
-            color: #ffaa00;
-        }
-        .panel-label {
-            text-align: center;
-            font-size: 11px;
-            color: #6b7c96;
-            margin-bottom: 4px;
-        }
-        .auto-card {
-            background: linear-gradient(135deg, #1a1f3a, #0f1228);
-            border-radius: 20px;
-            padding: 12px 16px;
-            margin-bottom: 12px;
-        }
-        .auto-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 12px;
-        }
+        .toast { position: fixed; bottom: 70px; left: 50%; transform: translateX(-50%); background: black; padding: 8px 16px; border-radius: 30px; font-size: 12px; z-index: 200; display: none; }
+        .panel-value { font-size: 24px; font-weight: 800; text-align: center; color: #ffaa00; }
+        .panel-label { text-align: center; font-size: 11px; color: #6b7c96; margin-bottom: 4px; }
+        .auto-card { background: linear-gradient(135deg, #1a1f3a, #0f1228); border-radius: 20px; padding: 12px 16px; margin-bottom: 12px; }
+        .auto-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
         .auto-row-left { display: flex; align-items: center; gap: 12px; }
         .auto-icon { font-size: 20px; }
         .auto-label { font-weight: 600; font-size: 14px; }
@@ -484,9 +315,25 @@
         updateUI();
     }
     
+    function cancelBet() {
+        if (!hasActiveBet) return;
+        
+        socket.emit('rocket_cancel_bet', { telegram_id: uid }, (res) => {
+            if (res?.success) {
+                toast(`Ставка отменена. Возвращено ${res.amount}⭐`);
+                hasActiveBet = false;
+                crashMyBet = null;
+                refreshBalance();
+                document.getElementById('crashBtn').innerText = "💰 Сделать ставку";
+                document.getElementById('crashBtn').classList.remove('btn-cancel', 'btn-cashout');
+            } else {
+                toast(res?.error || "Не удалось отменить ставку");
+            }
+        });
+    }
+    
     function crashClick() { 
         if (isCountdown && hasActiveBet) {
-            // Отмена ставки во время обратного отсчёта
             cancelBet();
         } else if (crashActive && hasActiveBet && crashMyBet && !crashMyBet.cashed) {
             cashoutCrash();
@@ -497,16 +344,6 @@
         } else if (hasActiveBet && crashMyBet?.cashed) {
             toast("Вы уже забрали выигрыш в этом раунде!");
         }
-    }
-    
-    function cancelBet() {
-        toast("Ставка отменена");
-        hasActiveBet = false;
-        crashMyBet = null;
-        // Возвращаем звёзды (на сервере нужно реализовать возврат)
-        refreshBalance();
-        document.getElementById('crashBtn').innerText = "💰 Сделать ставку";
-        document.getElementById('crashBtn').classList.remove('btn-cancel', 'btn-cashout');
     }
     
     function placeCrash() {
@@ -557,7 +394,6 @@
             isCountdown = true;
             if (statusDiv) { multDiv.style.display = 'none'; statusDiv.style.display = 'block'; statusDiv.innerHTML = s; }
             if (el) el.innerHTML = `⏳ Старт через ${s}`;
-            // Если есть активная ставка во время отсчёта — показываем кнопку "Отмена"
             if (hasActiveBet && !crashActive) {
                 document.getElementById('crashBtn').innerText = "❌ Отмена";
                 document.getElementById('crashBtn').classList.add('btn-cancel');
@@ -568,7 +404,6 @@
             if (el) el.innerHTML = '🚀 В игре';
             if (statusDiv) statusDiv.style.display = 'none';
             if (multDiv) multDiv.style.display = 'block';
-            // Если есть активная ставка после взлёта — меняем на "Забрать"
             if (hasActiveBet && crashActive) {
                 document.getElementById('crashBtn').innerText = "💸 Забрать";
                 document.getElementById('crashBtn').classList.add('btn-cashout');
@@ -592,7 +427,6 @@
     socket.on('rocket_multiplier', (m) => { 
         currentMultiplier = m; 
         document.getElementById('crashMult').innerHTML = m.toFixed(2) + 'x'; 
-        // Точная проверка автовывода (с учётом погрешности)
         if (crashActive && crashMyBet && !crashMyBet.cashed && autoCashoutEnabled && currentMultiplier >= autoCashoutValue - 0.005) {
             cashoutCrash();
         }
@@ -618,6 +452,13 @@
     });
     
     socket.on('rocket_bet_placed', (b) => { crashBets.push({ ...b, cashedAt: null }); renderCrashBets(); refreshBalance(); });
+    
+    socket.on('rocket_bet_cancelled', (data) => {
+        const index = crashBets.findIndex(b => b.name === data.name);
+        if (index !== -1) crashBets.splice(index, 1);
+        renderCrashBets();
+    });
+    
     socket.on('rocket_cashout_done', (d) => { 
         if (d.name === pname) { 
             gameHistory.unshift({ game: 'Ракета', amount: d.win, time: new Date().toLocaleTimeString() }); 
