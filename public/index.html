@@ -516,7 +516,6 @@
     </div>
 </div>
 
-<!-- Остальные экраны -->
 <div id="crash" class="screen">
     <div class="crash-display">
         <div class="multiplier" id="crashMult">1.00x</div>
@@ -633,8 +632,13 @@
     const user = tg?.initDataUnsafe?.user;
     const uid = user ? user.id.toString() : 'p' + Math.floor(Math.random() * 1000000);
     const pname = user ? (user.first_name + (user.last_name ? ' ' + user.last_name : '')) : 'Игрок';
-    // Аватарка из Telegram (берем фото или первую букву)
-    const userAvatar = user?.photo_url ? '🖼️' : (user?.first_name ? user.first_name.charAt(0).toUpperCase() : '👤');
+    // Аватарка из Telegram: фото или первая буква
+    let userAvatar = '👤';
+    if (user?.photo_url) {
+        userAvatar = '🖼️';
+    } else if (user?.first_name) {
+        userAvatar = user.first_name.charAt(0).toUpperCase();
+    }
     
     let stars = 1000, turnover = 0, games = 0, wins = 0;
     let referralCount = 0;
@@ -662,7 +666,7 @@
         document.getElementById('minesBet').innerText = minesBet;
         document.getElementById('rouletteBet').innerText = rouletteBet;
         document.getElementById('profName').innerText = pname;
-        document.getElementById('profUser').innerText = '@' + pname;
+        document.getElementById('profUser').innerText = user ? ('@' + (user.username || user.first_name)) : '@player';
         document.getElementById('profileAvatar').innerHTML = userAvatar;
         document.getElementById('profGames').innerText = games;
         document.getElementById('profTurn').innerText = turnover;
@@ -1076,6 +1080,18 @@
         if (game === 'mines') renderMinesBoard(false);
         if (game === 'roulette') drawRouletteWheel();
     }
+    
+    // Получаем реферальную статистику с сервера
+    socket.emit('get_referral_stats', uid, (data) => {
+        if (data) {
+            referralCount = data.count || 0;
+            referralEarned = data.earned || 0;
+            const refCountEl = document.getElementById('refCount');
+            const refEarnedEl = document.getElementById('refEarned');
+            if (refCountEl) refCountEl.innerText = referralCount;
+            if (refEarnedEl) refEarnedEl.innerText = referralEarned;
+        }
+    });
     
     switchSubtab('refs', document.querySelector('.subtab-btn.active'));
     setInterval(refreshBalance, 3000);
