@@ -93,9 +93,6 @@ function startRocketFlying() {
     
     if (rocketInterval) clearInterval(rocketInterval);
     
-    // ПЛАВНАЯ ДИНАМИЧЕСКАЯ СКОРОСТЬ
-    // Начальная скорость: 0.006, максимальная: 0.025
-    // Рост скорости происходит плавно в зависимости от текущего множителя
     let lastTime = Date.now();
     
     rocketInterval = setInterval(() => {
@@ -108,13 +105,9 @@ function startRocketFlying() {
         const delta = Math.min(100, now - lastTime);
         lastTime = now;
         
-        // Плавное увеличение скорости: от 0.006 до 0.025
-        // Множитель влияет на скорость, но без резких скачков
         let speed = 0.006 + (rocketState.currentMultiplier - 1) * 0.0025;
-        speed = Math.min(speed, 0.025); // ограничиваем максимум
-        speed = Math.max(speed, 0.006); // минимум
-        
-        // Учитываем реальное время (delta)
+        speed = Math.min(speed, 0.025);
+        speed = Math.max(speed, 0.006);
         let adjustedSpeed = speed * (delta / 100);
         
         rocketState.currentMultiplier += adjustedSpeed;
@@ -195,6 +188,7 @@ io.on('connection', (socket) => {
         });
     });
     
+    // ===== РАКЕТА =====
     socket.on('rocket_place_bet', (data, callback) => {
         if (rocketState.status !== 'waiting') {
             if (callback) callback({ success: false, error: 'Ставки только до взлёта!' });
@@ -285,11 +279,17 @@ io.on('connection', (socket) => {
         });
     });
     
+    // ===== МИНЫ С ПОДКРУТКОЙ =====
     socket.on('mines_start', (data, callback) => {
         const { telegram_id, betAmount, minesCount } = data;
         
         if (betAmount < 10) {
             if (callback) callback({ success: false, error: 'Минимум 10 звёзд' });
+            return;
+        }
+        
+        if (minesCount < 1 || minesCount > 24) {
+            if (callback) callback({ success: false, error: 'Мин от 1 до 24' });
             return;
         }
         
@@ -302,9 +302,15 @@ io.on('connection', (socket) => {
             db.run(`UPDATE users SET stars = stars - ?, games_played = games_played + 1 WHERE telegram_id = ?`, [betAmount, telegram_id]);
             
             const totalCells = 25;
-            let realMinesCount = Math.min(24, minesCount + Math.floor(Math.random() * 4) + 2);
+            
+            // ПОДКРУТКА: чем больше ставка, тем больше мин
+            let finalMinesCount = minesCount;
+            if (betAmount >= 500) finalMinesCount = Math.min(24, finalMinesCount + Math.floor(betAmount / 80));
+            else if (betAmount >= 200) finalMinesCount = Math.min(24, finalMinesCount + Math.floor(betAmount / 40));
+            else if (betAmount >= 100) finalMinesCount = Math.min(24, finalMinesCount + Math.floor(betAmount / 20));
+            
             const mineIndices = [];
-            while (mineIndices.length < realMinesCount) {
+            while (mineIndices.length < finalMinesCount) {
                 const idx = Math.floor(Math.random() * totalCells);
                 if (!mineIndices.includes(idx)) mineIndices.push(idx);
             }
@@ -312,12 +318,12 @@ io.on('connection', (socket) => {
             minesState.set(telegram_id, {
                 grid: mineIndices,
                 bet: betAmount,
-                minesCount: realMinesCount,
+                minesCount: finalMinesCount,
                 revealed: 0,
                 active: true
             });
             
-            if (callback) callback({ success: true, minesCount: realMinesCount });
+            if (callback) callback({ success: true, minesCount: finalMinesCount });
         });
     });
     
@@ -346,7 +352,7 @@ io.on('connection', (socket) => {
         for (let i = 0; i < game.revealed; i++) {
             multiplier *= (safeCells - i) / (totalCells - i);
         }
-        multiplier = (1 / multiplier) * 0.7;
+        multiplier = 1 / multiplier;
         
         const winAmount = Math.floor(game.bet * multiplier);
         
@@ -386,7 +392,7 @@ io.on('connection', (socket) => {
         for (let i = 0; i < game.revealed; i++) {
             multiplier *= (safeCells - i) / (totalCells - i);
         }
-        multiplier = (1 / multiplier) * 0.7;
+        multiplier = 1 / multiplier;
         
         const winAmount = Math.floor(game.bet * multiplier);
         
@@ -407,6 +413,7 @@ io.on('connection', (socket) => {
         if (callback) callback({ success: true, winAmount });
     });
     
+    // ===== РУЛЕТКА =====
     socket.on('roulette_place_bet', (data, callback) => {
         if (rouletteIsSpinning) {
             if (callback) callback({ success: false, error: 'Рулетка крутится!' });
@@ -502,11 +509,8 @@ server.listen(PORT, () => {
     ║   🚀 DADTON СЕРВЕР ЗАПУЩЕН          ║
     ║   http://localhost:${PORT}              ║
     ║                                      ║
-    ║   ⚡ ПЛАВНАЯ СКОРОСТЬ:               ║
-    ║   - Начальная: 0.006                ║
-    ║   - Максимальная: 0.025             ║
-    ║   - Растёт плавно от множителя      ║
-    ║   - Обновление каждые 50мс          ║
+    ║   ⚡ ДИНАМИЧЕСКАЯ СКОРОСТЬ          ║
+    ║   💣 МИНЫ С ПОДКРУТКОЙ               ║
     ╚══════════════════════════════════════╝
     `);
 });
