@@ -413,7 +413,6 @@
     let stars = 1000, turnover = 0, games = 0, wins = 0;
     let referralCount = 0, referralEarned = 0;
     let hasActiveBet = false;
-    let isWaitingForNextRound = false;
     
     let crashBet = 10, crashActive = false, crashMyBet = null, crashBets = [], currentMultiplier = 1;
     let autoCashoutEnabled = false, autoCashoutValue = 1.5;
@@ -447,8 +446,9 @@
     socket.emit('register', { telegram_id: uid, name: pname, avatar: userAvatar }, (res) => { if (res?.success) { stars = res.stars; updateUI(); } });
     
     function toggleAutoCashout() {
-        if (crashActive) {
-            toast("Нельзя менять настройки во время игры!");
+        // Можно менять настройки, только если у игрока НЕТ активной ставки в этом раунде
+        if (hasActiveBet) {
+            toast("Нельзя менять настройки после ставки в этом раунде!");
             document.getElementById('autoCashoutToggle').checked = autoCashoutEnabled;
             return;
         }
@@ -473,7 +473,7 @@
     }
     
     function bet(type) {
-        if (crashActive) return;
+        if (hasActiveBet) { toast("У вас уже есть ставка в этом раунде!"); return; }
         if (type === 'min') crashBet = 10;
         if (type === 'add') crashBet += 10;
         if (type === 'max') crashBet = stars;
@@ -483,14 +483,14 @@
     }
     
     function crashClick() { 
-        if (isWaitingForNextRound) {
-            toast("Дождитесь следующего раунда!");
-            return;
-        }
-        if (crashActive) {
+        if (crashActive && hasActiveBet && crashMyBet && !crashMyBet.cashed) {
             cashoutCrash();
-        } else {
+        } else if (!crashActive && !hasActiveBet) {
             placeCrash();
+        } else if (!hasActiveBet && crashActive) {
+            toast("Вы не сделали ставку в этом раунде!");
+        } else if (hasActiveBet && crashMyBet?.cashed) {
+            toast("Вы уже забрали выигрыш в этом раунде!");
         }
     }
     
@@ -536,12 +536,10 @@
         if (s > 0) {
             if (statusDiv) { multDiv.style.display = 'none'; statusDiv.style.display = 'block'; statusDiv.innerHTML = s; }
             if (el) el.innerHTML = `⏳ Старт через ${s}`;
-            isWaitingForNextRound = true;
         } else if (s === 0) {
             if (el) el.innerHTML = '🚀 В игре';
             if (statusDiv) statusDiv.style.display = 'none';
             if (multDiv) multDiv.style.display = 'block';
-            isWaitingForNextRound = false;
         } else {
             if (el && !crashActive) el.innerHTML = '● Ожидание ставок';
         }
@@ -589,12 +587,11 @@
             refreshBalance(); 
             if (crashMyBet) crashMyBet.cashed = true; 
             hasActiveBet = false;
-            // После кэшаута — кнопка становится серой "Ожидание"
             document.getElementById('crashBtn').innerText = "⏳ Ожидание";
             document.getElementById('crashBtn').classList.add('btn-waiting');
             document.getElementById('crashBtn').classList.remove('btn-cashout');
             setTimeout(() => {
-                if (!crashActive) {
+                if (!crashActive && !hasActiveBet) {
                     document.getElementById('crashBtn').innerText = "💰 Сделать ставку";
                     document.getElementById('crashBtn').classList.remove('btn-waiting');
                 }
@@ -774,13 +771,11 @@
     setInterval(refreshBalance, 3000);
     updateUI();
     
-    // Загружаем историю иксов при запуске
     socket.on('rocket_history_data', (d) => {
         if (d && d.length) { crashHistoryData = d.map(item => item.multiplier.toFixed(2)); if (crashHistoryData.length > 10) crashHistoryData = crashHistoryData.slice(0, 10); const historyContainer = document.getElementById('crashHistory'); if (historyContainer) historyContainer.innerHTML = crashHistoryData.map(m => `<div class="history-item">${m}x</div>`).join(''); }
     });
     socket.emit('rocket_get_history');
     
-    // Устанавливаем начальное состояние переключателя автовывода
     autoCashoutEnabled = false;
     document.getElementById('autoCashoutToggle').checked = false;
     toggleAutoCashout();
