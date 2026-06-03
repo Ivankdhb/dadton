@@ -73,11 +73,11 @@
         .rank-2 { color: #c0c0c0; }
         .rank-3 { color: #cd7f32; }
         .leader-info { display: flex; align-items: center; gap: 12px; flex: 1; }
-        .leader-avatar { width: 40px; height: 40px; background: linear-gradient(135deg, #f59e0b, #ef4444); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; }
+        .leader-avatar { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; background: linear-gradient(135deg, #f59e0b, #ef4444); }
         .leader-name { font-weight: 600; }
         .leader-score { color: #ffaa00; font-weight: 700; }
         
-        .profile-avatar { width: 80px; height: 80px; background: linear-gradient(135deg, #f59e0b, #ef4444); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 40px; margin: 0 auto 12px; }
+        .profile-avatar { width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 40px; margin: 0 auto 12px; background: linear-gradient(135deg, #f59e0b, #ef4444); }
         .profile-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
         .stat-card { background: #1e295d; border-radius: 16px; padding: 12px; text-align: center; }
         
@@ -238,9 +238,13 @@
     const uid = user ? user.id.toString() : 'p' + Math.floor(Math.random() * 1000000);
     const pname = user ? (user.first_name + (user.last_name ? ' ' + user.last_name : '')) : 'Игрок';
     
+    // Аватарка из Telegram
     let userAvatar = '👤';
-    if (user?.photo_url) userAvatar = '🖼️';
-    else if (user?.first_name) userAvatar = user.first_name.charAt(0).toUpperCase();
+    if (user?.photo_url) {
+        userAvatar = '🖼️';
+    } else if (user?.first_name) {
+        userAvatar = user.first_name.charAt(0).toUpperCase();
+    }
     
     let stars = 1000, turnover = 0, games = 0, wins = 0;
     let referralCount = 0, referralEarned = 0;
@@ -334,34 +338,42 @@
         const btn = document.getElementById('crashBtn');
         if (!btn) return;
         
-        // Сброс всех классов
         btn.classList.remove('btn-cancel', 'btn-cashout', 'btn-disabled');
         
-        if (!hasActiveBet && !crashActive && !isCountdown) {
-            // Нет ставки, раунд не активен — можно ставить
+        // Если нет активной ставки и раунд не активен (ожидание ставок)
+        if (!hasActiveBet && !crashActive && rocketStateCountdown === -1) {
             btn.innerText = "💰 Сделать ставку";
             btn.style.pointerEvents = "auto";
             btn.style.opacity = "1";
-        } else if (hasActiveBet && isCountdown && !crashActive) {
-            // Есть ставка, идёт обратный отсчёт — кнопка "Отмена"
+            btn.disabled = false;
+        }
+        // Если есть ставка и идёт обратный отсчёт
+        else if (hasActiveBet && isCountdown && !crashActive) {
             btn.innerText = "❌ Отмена";
             btn.classList.add('btn-cancel');
             btn.style.pointerEvents = "auto";
             btn.style.opacity = "1";
-        } else if (hasActiveBet && crashActive) {
-            // Есть ставка, ракета летит — кнопка "Забрать"
+            btn.disabled = false;
+        }
+        // Если есть ставка и ракета летит
+        else if (hasActiveBet && crashActive) {
             btn.innerText = "💸 Забрать";
             btn.classList.add('btn-cashout');
             btn.style.pointerEvents = "auto";
             btn.style.opacity = "1";
-        } else {
-            // Остальные случаи — кнопка неактивна
+            btn.disabled = false;
+        }
+        // Остальные случаи — кнопка неактивна
+        else {
             btn.innerText = "⏳ Ожидание";
             btn.classList.add('btn-disabled');
             btn.style.pointerEvents = "none";
             btn.style.opacity = "0.6";
+            btn.disabled = true;
         }
     }
+    
+    let rocketStateCountdown = -1;
     
     function crashClick() { 
         const btn = document.getElementById('crashBtn');
@@ -387,6 +399,7 @@
         autoCashoutValue = parseFloat(document.getElementById('autoCashoutVal').value);
         
         const btn = document.getElementById('crashBtn');
+        const originalText = btn.innerText;
         btn.disabled = true;
         btn.innerText = "⏳ Обработка...";
         
@@ -397,7 +410,10 @@
                 crashMyBet = { amount: crashBet, autoCashout: autoCashoutValue, cashed: false };
                 refreshBalance();
                 updateButtonState();
-            } else toast(res?.error || 'Ошибка');
+            } else {
+                btn.innerText = originalText;
+                toast(res?.error || 'Ошибка');
+            }
         });
     }
     
@@ -411,16 +427,18 @@
         const cont = document.getElementById('crashBets');
         if (!cont) return;
         if (!crashBets.length) { cont.innerHTML = '<div class="empty">Нет ставок</div>'; return; }
-        cont.innerHTML = crashBets.map(b => `<div class="bet-item"><span><div style="width:28px; height:28px; background:linear-gradient(135deg,#f59e0b,#ef4444); border-radius:50%; display:inline-flex; align-items:center; justify-content:center; margin-right:8px;">${b.avatar || '👤'}</div>${b.name}</span><span>⭐ ${b.amount}</span>${b.cashedAt ? `<span style="color:#00e699;">✅ ${b.cashedAt.toFixed(2)}x</span>` : '<span style="color:#f59e0b;">⏳</span>'}</div>`).join('');
+        cont.innerHTML = crashBets.map(b => `<div class="bet-item"><span><div style="width:28px; height:28px; background:linear-gradient(135deg,#f59e0b,#ef4444); border-radius:50%; display:inline-flex; align-items:center; justify-content:center; margin-right:8px; font-size:14px;">${b.avatar || '👤'}</div>${b.name}</span><span>⭐ ${b.amount}</span>${b.cashedAt ? `<span style="color:#00e699;">✅ ${b.cashedAt.toFixed(2)}x</span>` : '<span style="color:#f59e0b;">⏳</span>'}</div>`).join('');
     }
     
     socket.on('rocket_countdown', (s) => { 
+        rocketStateCountdown = s;
         const el = document.getElementById('crashStatus');
         const statusDiv = document.getElementById('crashStatusText');
         const multDiv = document.getElementById('crashMult');
         
         if (s > 0) {
             isCountdown = true;
+            crashActive = false;
             if (statusDiv) { multDiv.style.display = 'none'; statusDiv.style.display = 'block'; statusDiv.innerHTML = s; }
             if (el) el.innerHTML = `⏳ Старт через ${s}`;
             updateButtonState();
@@ -432,13 +450,15 @@
             updateButtonState();
         } else {
             isCountdown = false;
+            crashActive = false;
             if (el && !crashActive) el.innerHTML = '● Ожидание ставок';
             updateButtonState();
         }
     });
     
     socket.on('rocket_start', () => { 
-        crashActive = true; currentMultiplier = 1; 
+        crashActive = true; 
+        currentMultiplier = 1; 
         document.getElementById('crashMult').innerHTML = '1.00x'; 
         document.getElementById('crashMult').className = 'multiplier flying';
         document.getElementById('crashStatus').innerHTML = '🚀 В игре';
@@ -496,6 +516,7 @@
     });
     socket.on('rocket_bets_clear', () => { crashBets = []; renderCrashBets(); });
     
+    // ========== МИНЫ ==========
     function minesBetAdj(type) {
         if (type === 'half') minesBet = Math.floor(minesBet / 2);
         if (type === 'double') minesBet *= 2;
@@ -585,6 +606,7 @@
         }
     }
     
+    // ========== РУЛЕТКА ==========
     function rouletteBetAdj(type) {
         if (type === 'min') rouletteBet = 10;
         if (type === 'add') rouletteBet += 10;
@@ -609,7 +631,7 @@
         const total = rouletteBets.reduce((s, b) => s + b.amount, 0);
         if (totalSpan) totalSpan.innerText = `Общая ставка: ${total}⭐`;
         if (!rouletteBets.length) { cont.innerHTML = '<div class="empty">Нет ставок</div>'; return; }
-        cont.innerHTML = rouletteBets.map(b => `<div class="bet-item"><span><div style="width:28px; height:28px; background:linear-gradient(135deg,#f59e0b,#ef4444); border-radius:50%; display:inline-flex; align-items:center; justify-content:center; margin-right:8px;">${b.avatar || '👤'}</div>${b.name}</span><span>⭐ ${b.amount}</span><span style="color:#00e699;">шанс ${total ? ((b.amount / total) * 100).toFixed(1) : 0}%</span></div>`).join('');
+        cont.innerHTML = rouletteBets.map(b => `<div class="bet-item"><span><div style="width:28px; height:28px; background:linear-gradient(135deg,#f59e0b,#ef4444); border-radius:50%; display:inline-flex; align-items:center; justify-content:center; margin-right:8px; font-size:14px;">${b.avatar || '👤'}</div>${b.name}</span><span>⭐ ${b.amount}</span><span style="color:#00e699;">шанс ${total ? ((b.amount / total) * 100).toFixed(1) : 0}%</span></div>`).join('');
     }
     
     function drawRouletteWheel() {
@@ -672,7 +694,11 @@
     autoCashoutEnabled = false;
     document.getElementById('autoCashoutToggle').checked = false;
     toggleAutoCashout();
-    updateButtonState();
+    
+    // Инициализация состояния кнопки
+    setTimeout(() => {
+        updateButtonState();
+    }, 500);
 </script>
 </body>
 </html>
