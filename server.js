@@ -93,8 +93,9 @@ function startRocketFlying() {
     
     if (rocketInterval) clearInterval(rocketInterval);
     
-    // ДИНАМИЧЕСКАЯ СКОРОСТЬ: чем выше множитель, тем быстрее растёт
-    let lastMultiplier = 1.00;
+    // ПЛАВНАЯ ДИНАМИЧЕСКАЯ СКОРОСТЬ
+    // Начальная скорость: 0.006, максимальная: 0.025
+    // Рост скорости происходит плавно в зависимости от текущего множителя
     let lastTime = Date.now();
     
     rocketInterval = setInterval(() => {
@@ -107,11 +108,16 @@ function startRocketFlying() {
         const delta = Math.min(100, now - lastTime);
         lastTime = now;
         
-        // Базовая скорость + ускорение от текущего множителя
-        let speed = 0.008 + (rocketState.currentMultiplier * 0.003);
-        speed = Math.min(speed, 0.035); // ограничиваем максимальную скорость
+        // Плавное увеличение скорости: от 0.006 до 0.025
+        // Множитель влияет на скорость, но без резких скачков
+        let speed = 0.006 + (rocketState.currentMultiplier - 1) * 0.0025;
+        speed = Math.min(speed, 0.025); // ограничиваем максимум
+        speed = Math.max(speed, 0.006); // минимум
         
-        rocketState.currentMultiplier += speed;
+        // Учитываем реальное время (delta)
+        let adjustedSpeed = speed * (delta / 100);
+        
+        rocketState.currentMultiplier += adjustedSpeed;
         
         if (rocketState.currentMultiplier >= rocketState.crashPoint) {
             clearInterval(rocketInterval);
@@ -126,7 +132,7 @@ function startRocketFlying() {
         } else {
             io.emit('rocket_multiplier', rocketState.currentMultiplier);
         }
-    }, 50); // обновление каждые 50мс (быстрее)
+    }, 50);
 }
 
 let minesState = new Map();
@@ -496,8 +502,10 @@ server.listen(PORT, () => {
     ║   🚀 DADTON СЕРВЕР ЗАПУЩЕН          ║
     ║   http://localhost:${PORT}              ║
     ║                                      ║
-    ║   ⚡ ДИНАМИЧЕСКАЯ СКОРОСТЬ:         ║
-    ║   - Чем выше множитель, тем быстрее ║
+    ║   ⚡ ПЛАВНАЯ СКОРОСТЬ:               ║
+    ║   - Начальная: 0.006                ║
+    ║   - Максимальная: 0.025             ║
+    ║   - Растёт плавно от множителя      ║
     ║   - Обновление каждые 50мс          ║
     ╚══════════════════════════════════════╝
     `);
