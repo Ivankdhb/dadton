@@ -107,7 +107,7 @@ function startRocketFlying() {
         
         let speed;
         if (rocketState.currentMultiplier < 1.5) {
-            speed = 0.008; // медленно до 1.5x
+            speed = 0.008;
         } else {
             speed = 0.012 + (rocketState.currentMultiplier - 1.5) * 0.003;
             speed = Math.min(speed, 0.035);
@@ -521,8 +521,11 @@ server.listen(PORT, () => {
     ║   http://localhost:${PORT}              ║
     ║                                      ║
     ║   ⚡ СКОРОСТЬ РАКЕТЫ:                ║
-    ║   - до 1.5x: очень медленно (0.008) ║
+    ║   - до 1.5x: медленно (0.008)       ║
     ║   - после 1.5x: плавное ускорение   ║
+    ║   💣 МИНЫ: правильные множители     ║
+    ║   🎡 РУЛЕТКА: честный рандом        ║
+    ║   👥 РЕФЕРАЛЫ: 10% от оборота       ║
     ╚══════════════════════════════════════╝
     `);
 });
