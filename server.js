@@ -105,10 +105,8 @@ function startRocketFlying() {
         const delta = Math.min(100, now - lastTime);
         lastTime = now;
         
-        let speed = 0.006 + (rocketState.currentMultiplier - 1) * 0.0025;
-        speed = Math.min(speed, 0.025);
-        speed = Math.max(speed, 0.006);
-        let adjustedSpeed = speed * (delta / 100);
+        let speed = 0.012 + (rocketState.currentMultiplier - 1) * 0.004;
+speed = Math.min(speed, 0.045);
         
         rocketState.currentMultiplier += adjustedSpeed;
         
