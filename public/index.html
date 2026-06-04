@@ -15,7 +15,6 @@
         .screen { display: none; padding: 12px; }
         .screen.active { display: block; }
         
-        /* БОЛЬШИЕ КНОПКИ ИГР */
         .game-card { 
             background: linear-gradient(135deg, #ff5277, #ff2a55); 
             border-radius: 20px; 
@@ -38,10 +37,9 @@
         .btn:active { transform: scale(0.98); }
         .btn-cancel { background: #ef4444; color: white; }
         .btn-cashout { background: #00e699; color: black; }
-        .btn-disabled { background: #2a3448; color: #6b7c96; cursor: not-allowed; pointer-events: none; }
         .preset-row { display: flex; gap: 8px; margin: 12px 0; }
         .preset { background: #1e295d; padding: 8px; border-radius: 10px; flex: 1; text-align: center; cursor: pointer; font-weight: 700; }
-        .bet-input-custom { background: #0a1128; border: 1px solid #2a3450; color: #ffaa00; padding: 8px 12px; border-radius: 30px; width: 100%; text-align: center; font-weight: 700; margin-bottom: 8px; }
+        .bet-input-custom { background: #0a1128; border: 1px solid #2a3450; color: #ffaa00; padding: 10px 12px; border-radius: 30px; width: 100%; text-align: center; font-weight: 700; margin-bottom: 10px; font-size: 16px; }
         
         .crash-display { background: radial-gradient(circle, #1b1947, #101935); height: 140px; border-radius: 16px; display: flex; flex-direction: column; align-items: center; justify-content: center; margin-bottom: 12px; }
         .multiplier { font-size: 44px; font-weight: 900; }
@@ -137,8 +135,7 @@
     <div class="history" id="crashHistory"></div>
     <div class="widget">
         <div class="panel-label">Сумма ставки</div>
-        <div class="panel-value">⭐ <span id="crashBet">10</span></div>
-        <input type="number" id="crashBetInput" class="bet-input-custom" placeholder="Введите сумму" value="10" onchange="updateCrashBet()">
+        <input type="number" id="crashBetInput" class="bet-input-custom" placeholder="Введите сумму" value="10" min="10" onchange="updateCrashBet()">
         <div class="preset-row">
             <div class="preset" onclick="changeBet('min')">MIN</div>
             <div class="preset" onclick="changeBet('add')">+10</div>
@@ -158,8 +155,7 @@
 <div id="mines" class="screen">
     <div class="widget">
         <div class="panel-label">Ставка</div>
-        <div class="panel-value">⭐ <span id="minesBet">20</span></div>
-        <input type="number" id="minesBetInput" class="bet-input-custom" placeholder="Введите сумму" value="20" onchange="updateMinesBet()">
+        <input type="number" id="minesBetInput" class="bet-input-custom" placeholder="Введите сумму" value="20" min="10" onchange="updateMinesBet()">
         <div class="preset-row"><div class="preset" onclick="minesBetAdj('half')">½</div><div class="preset" onclick="minesBetAdj('double')">×2</div><div class="preset" onclick="minesBetAdj('max')">MAX</div></div>
         <div class="auto-row" style="justify-content: space-between; margin-top: 12px;"><span class="auto-label">💣 Количество мин</span>
             <select id="minesCountSelect" style="background:#0a1128; color:white; padding:6px 12px; border-radius:20px; border:1px solid #2a3450;">
@@ -181,8 +177,7 @@
     <div class="roulette-container"><div class="roulette-pointer">▼</div><canvas id="rouletteCanvas" width="200" height="200" class="roulette-wheel"></canvas></div>
     <div class="widget">
         <div class="panel-label">Сумма ставки</div>
-        <div class="panel-value">⭐ <span id="rouletteBet">10</span></div>
-        <input type="number" id="rouletteBetInput" class="bet-input-custom" placeholder="Введите сумму" value="10" onchange="updateRouletteBet()">
+        <input type="number" id="rouletteBetInput" class="bet-input-custom" placeholder="Введите сумму" value="10" min="10" onchange="updateRouletteBet()">
         <div class="preset-row"><div class="preset" onclick="rouletteBetAdj('min')">MIN</div><div class="preset" onclick="rouletteBetAdj('add')">+10</div><div class="preset" onclick="rouletteBetAdj('max')">MAX</div></div>
         <div class="btn" id="roulettePlaceBtn" onclick="placeRoulette()">📥 Сделать ставку</div>
         <div class="btn" id="rouletteCancelBtn" onclick="cancelRouletteBet()" style="margin-top: 8px; background:#ef4444; display: none;">❌ Отменить ставку</div>
@@ -218,7 +213,7 @@
     // РАКЕТА
     let currentBet = 10, myBet = null, autoEnabled = false, autoValue = 1.5, betsList = [], isFlying = false, crashHistory = [], currentMultiplier = 1;
     
-    // МИНЫ (уменьшенные иксы)
+    // МИНЫ
     let minesBet = 20, minesActive = false, minesRevealed = 0, minesMinesCount = 5, minesBetAmount = 0, minesMult = 1, minesGridActive = false, minesCurrentWinAmount = 0;
     
     // РУЛЕТКА
@@ -257,6 +252,7 @@
         let val = parseInt(document.getElementById('crashBetInput').value);
         if(isNaN(val)) val = 10;
         currentBet = Math.min(Math.max(val, 10), stars);
+        document.getElementById('crashBetInput').value = currentBet;
         updateUI();
     }
     
@@ -329,11 +325,12 @@
     socket.on('rocket_history_data', (d) => { if(d&&d.length) { crashHistory=d.map(item=>item.multiplier.toFixed(2)); if(crashHistory.length>10) crashHistory=crashHistory.slice(0,10); const hist=document.getElementById('crashHistory'); if(hist) hist.innerHTML=crashHistory.map(m=>`<div class="history-item">${m}x</div>`).join(''); } });
     socket.emit('rocket_get_history');
     
-    // ========== МИНЫ (УМЕНЬШЕННЫЕ ИКСЫ) ==========
+    // ========== МИНЫ ==========
     function updateMinesBet() {
         let val = parseInt(document.getElementById('minesBetInput').value);
         if(isNaN(val)) val = 20;
         minesBet = Math.min(Math.max(val, 10), stars);
+        document.getElementById('minesBetInput').value = minesBet;
         updateUI();
     }
     
@@ -434,6 +431,7 @@
         let val = parseInt(document.getElementById('rouletteBetInput').value);
         if(isNaN(val)) val = 10;
         rouletteBet = Math.min(Math.max(val, 10), stars);
+        document.getElementById('rouletteBetInput').value = rouletteBet;
         updateUI();
     }
     
@@ -504,7 +502,6 @@
         socket.emit('roulette_spin');
     }
     
-    // Автоматическое вращение рулетки каждые 15 секунд при наличии 2+ игроков
     function startRouletteAutoSpin() {
         if(rouletteTimer) clearInterval(rouletteTimer);
         rouletteTimer = setInterval(() => {
@@ -536,7 +533,6 @@
         if(!canvas) return;
         const ctx = canvas.getContext('2d');
         const size=200, cx=size/2, cy=size/2, r=size/2-5;
-        // Цвета секторов (неяркие)
         const colors = ['#2a3a5c', '#1e2a4a', '#2a3a5c', '#1e2a4a', '#2a3a5c', '#1e2a4a', '#2a3a5c', '#1e2a4a'];
         const segments = ['⚡', '⭐', '🎲', '💎', '🎯', '🏆', '💰', '🍀'];
         const step=(Math.PI*2)/segments.length;
@@ -570,7 +566,6 @@
         ctx.stroke();
     }
     
-    // Автоматическое вращение рулетки
     socket.on('roulette_update', (b) => { 
         rouletteBets = b; 
         renderRouletteBets(); 
@@ -594,7 +589,6 @@
                 if(gameHistory.length > 10) gameHistory.pop();
             }
         } else toast("Ничья");
-        // Сбрасываем ставку игрока после завершения раунда
         rouletteHasBet = false;
         rouletteMyBet = null;
         document.getElementById('roulettePlaceBtn').style.display = 'block';
