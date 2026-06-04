@@ -93,22 +93,13 @@ function startRocketFlying() {
     
     if (rocketInterval) clearInterval(rocketInterval);
     
-    let lastTime = Date.now();
-    
     rocketInterval = setInterval(() => {
         if (rocketState.status !== 'flying') {
             clearInterval(rocketInterval);
             return;
         }
         
-        const now = Date.now();
-        const delta = Math.min(100, now - lastTime);
-        lastTime = now;
-        
-        let speed = 0.012 + (rocketState.currentMultiplier - 1) * 0.004;
-speed = Math.min(speed, 0.045);
-        
-        rocketState.currentMultiplier += adjustedSpeed;
+        rocketState.currentMultiplier += 0.02;
         
         if (rocketState.currentMultiplier >= rocketState.crashPoint) {
             clearInterval(rocketInterval);
@@ -123,13 +114,12 @@ speed = Math.min(speed, 0.045);
         } else {
             io.emit('rocket_multiplier', rocketState.currentMultiplier);
         }
-    }, 50);
+    }, 100);
 }
 
 let minesState = new Map();
 let rouletteBets = [];
 let rouletteIsSpinning = false;
-let rouletteTimer = null;
 
 function calculateRouletteWinner() {
     let total = rouletteBets.reduce((s, b) => s + b.amount, 0);
@@ -278,7 +268,7 @@ io.on('connection', (socket) => {
         });
     });
     
-    // ===== МИНЫ С МАЛЕНЬКИМИ ИКСАМИ =====
+    // ===== МИНЫ =====
     socket.on('mines_start', (data, callback) => {
         const { telegram_id, betAmount, minesCount } = data;
         
@@ -301,12 +291,8 @@ io.on('connection', (socket) => {
             db.run(`UPDATE users SET stars = stars - ?, games_played = games_played + 1 WHERE telegram_id = ?`, [betAmount, telegram_id]);
             
             const totalCells = 25;
-            
-            // МАЛЕНЬКИЕ ИКСЫ: без подкрутки, честные множители
-            let finalMinesCount = minesCount;
-            
             const mineIndices = [];
-            while (mineIndices.length < finalMinesCount) {
+            while (mineIndices.length < minesCount) {
                 const idx = Math.floor(Math.random() * totalCells);
                 if (!mineIndices.includes(idx)) mineIndices.push(idx);
             }
@@ -314,12 +300,12 @@ io.on('connection', (socket) => {
             minesState.set(telegram_id, {
                 grid: mineIndices,
                 bet: betAmount,
-                minesCount: finalMinesCount,
+                minesCount: minesCount,
                 revealed: 0,
                 active: true
             });
             
-            if (callback) callback({ success: true, minesCount: finalMinesCount });
+            if (callback) callback({ success: true, minesCount });
         });
     });
     
@@ -349,7 +335,6 @@ io.on('connection', (socket) => {
             multiplier *= (safeCells - i) / (totalCells - i);
         }
         multiplier = 1 / multiplier;
-        multiplier = multiplier * 0.95; // небольшое уменьшение для сложности
         
         const winAmount = Math.floor(game.bet * multiplier);
         
@@ -390,7 +375,6 @@ io.on('connection', (socket) => {
             multiplier *= (safeCells - i) / (totalCells - i);
         }
         multiplier = 1 / multiplier;
-        multiplier = multiplier * 0.95;
         
         const winAmount = Math.floor(game.bet * multiplier);
         
@@ -439,14 +423,28 @@ io.on('connection', (socket) => {
         });
     });
     
+    socket.on('roulette_cancel_bet', (data, callback) => {
+        const { telegram_id, name } = data;
+        const betIndex = rouletteBets.findIndex(b => b.telegram_id === telegram_id);
+        if (betIndex !== -1) {
+            const bet = rouletteBets[betIndex];
+            db.run(`UPDATE users SET stars = stars + ? WHERE telegram_id = ?`, [bet.amount, telegram_id]);
+            rouletteBets.splice(betIndex, 1);
+            io.emit('roulette_update', rouletteBets);
+            if (callback) callback({ success: true, amount: bet.amount });
+        } else {
+            if (callback) callback({ success: false, error: 'Ставка не найдена' });
+        }
+    });
+    
     socket.on('roulette_spin', (callback) => {
         if (rouletteIsSpinning) {
             if (callback) callback({ success: false, error: 'Уже крутится!' });
             return;
         }
         
-        if (rouletteBets.length < 2) {
-            if (callback) callback({ success: false, error: 'Нужно минимум 2 участника!' });
+        if (rouletteBets.length === 0) {
+            if (callback) callback({ success: false, error: 'Нет ставок!' });
             return;
         }
         
@@ -502,14 +500,5 @@ startRocketCountdown();
 
 const PORT = process.env.PORT || 10000;
 server.listen(PORT, () => {
-    console.log(`
-    ╔══════════════════════════════════════╗
-    ║   🚀 DADTON СЕРВЕР ЗАПУЩЕН          ║
-    ║   http://localhost:${PORT}              ║
-    ║                                      ║
-    ║   ⚡ ДИНАМИЧЕСКАЯ СКОРОСТЬ          ║
-    ║   💣 МИНЫ С МАЛЕНЬКИМИ ИКСАМИ       ║
-    ║   🎡 РУЛЕТКА С АВТОСПИНОМ           ║
-    ╚══════════════════════════════════════╝
-    `);
+    console.log(`🚀 Сервер запущен на порту ${PORT}`);
 });
