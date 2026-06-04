@@ -33,7 +33,6 @@
         .screen { display: none; padding: 16px; }
         .screen.active { display: block; }
         
-        /* ГЛАВНАЯ */
         .game-card {
             background: linear-gradient(135deg, #0d0d0d 0%, #050505 100%);
             border-radius: 24px;
@@ -48,7 +47,6 @@
         .game-card .sub { font-size: 11px; color: #6b6b6b; margin-top: 4px; }
         .game-card .art { position: absolute; right: 16px; bottom: 12px; font-size: 48px; opacity: 0.8; }
         
-        /* РАКЕТА - МИНИМАЛИСТИЧНО */
         .rocket-display {
             background: radial-gradient(ellipse at center, #0f0f0f 0%, #050505 100%);
             border-radius: 20px;
@@ -125,20 +123,21 @@
         input:checked + .slider:before { transform: translateX(24px); }
         
         .btn {
-            background: linear-gradient(135deg, #FFD700, #DAA520);
+            background: linear-gradient(135deg, #FFD700, #FFA500);
             width: 100%;
-            padding: 12px;
+            padding: 14px;
             border: none;
             border-radius: 40px;
             color: #000;
             font-weight: 800;
-            font-size: 15px;
+            font-size: 16px;
             cursor: pointer;
             text-align: center;
+            transition: transform 0.1s;
         }
+        .btn:active { transform: scale(0.97); }
         .btn-cancel { background: linear-gradient(135deg, #ff4444, #cc0000); color: #fff; }
         .btn-cashout { background: linear-gradient(135deg, #00cc66, #009944); color: #fff; }
-        .btn:active { transform: scale(0.98); }
         
         .history { display: flex; gap: 6px; overflow-x: auto; margin: 12px 0; padding-bottom: 4px; }
         .history-item { background: #0a0a0a; padding: 4px 12px; border-radius: 30px; font-size: 12px; font-weight: 600; border: 1px solid rgba(255,215,0,0.15); }
@@ -155,9 +154,9 @@
             border: 1px solid rgba(255,215,0,0.1);
             font-size: 12px;
         }
+        .win-multiplier { color: #00cc66 !important; font-weight: 700; }
         .empty { text-align: center; padding: 30px; color: #6b6b6b; }
         
-        /* МИНЫ */
         .mines-grid {
             display: grid;
             grid-template-columns: repeat(5, 1fr);
@@ -179,7 +178,6 @@
         .mine-cell.revealed-safe { background: linear-gradient(135deg, #00cc66, #009944); }
         .mine-cell.revealed-mine { background: linear-gradient(135deg, #ff4444, #cc0000); }
         
-        /* РУЛЕТКА */
         .roulette-wrap { display: flex; justify-content: center; margin: 16px 0; }
         .roulette-box { position: relative; width: 260px; height: 260px; }
         .roulette-bg {
@@ -202,7 +200,6 @@
             z-index: 10;
         }
         
-        /* ЛИДЕРЫ */
         .podium {
             display: flex;
             justify-content: center;
@@ -262,7 +259,6 @@
             border: 1px solid rgba(255,215,0,0.1);
         }
         
-        /* ПРОФИЛЬ */
         .profile-avatar {
             width: 70px; height: 70px;
             border-radius: 50%;
@@ -317,7 +313,6 @@
             border: 1px solid rgba(255,215,0,0.15);
         }
         
-        /* НИЖНЕЕ МЕНЮ */
         .bottom-nav {
             position: fixed;
             bottom: 0;
@@ -369,7 +364,6 @@
     <div class="balance">⭐ <span id="balance">0</span></div>
 </header>
 
-<!-- ГЛАВНАЯ -->
 <div id="screen-home" class="screen active">
     <div class="game-card" onclick="goTo('crash')">
         <div class="title">Ракета</div>
@@ -388,7 +382,6 @@
     </div>
 </div>
 
-<!-- РАКЕТА (МИНИМАЛИСТИЧНО) -->
 <div id="screen-crash" class="screen">
     <div class="rocket-display">
         <div class="rocket-multiplier" id="crashMult">1.00x</div>
@@ -421,7 +414,6 @@
     <div class="bets-list" id="crashBets"></div>
 </div>
 
-<!-- МИНЫ (ИСПРАВЛЕННЫЕ) -->
 <div id="screen-mines" class="screen">
     <div class="bet-panel">
         <input type="number" id="minesBetInput" class="bet-input" placeholder="Ставка" value="20" min="10">
@@ -446,11 +438,9 @@
         <span style="color:#6b6b6b;">Множитель: </span>
         <span id="minesMult" style="font-size:24px; font-weight:800; color:#FFD700;">1.00x</span>
     </div>
-    <!-- ТОЛЬКО ОДНА КНОПКА ЗАБРАТЬ -->
     <div class="btn" id="minesCash" disabled onclick="minesCashout()" style="background:#2a2a2a; color:#666;">💰 Забрать выигрыш</div>
 </div>
 
-<!-- РУЛЕТКА -->
 <div id="screen-roulette" class="screen">
     <div class="roulette-wrap">
         <div class="roulette-box">
@@ -477,13 +467,11 @@
     <div class="bets-list" id="rouletteBetsList"></div>
 </div>
 
-<!-- ЛИДЕРЫ -->
 <div id="screen-leaders" class="screen">
     <div class="podium" id="podiumContainer"></div>
     <div class="leader-list" id="leaderboardList"></div>
 </div>
 
-<!-- ПРОФИЛЬ -->
 <div id="screen-profile" class="screen">
     <div class="bet-panel" style="text-align:center;">
         <div class="profile-avatar" id="profileAvatar">👤</div>
@@ -577,14 +565,6 @@
     function getAvatarHtml(av, name) {
         if (av && av.startsWith('http')) return `<img src="${av}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`;
         else return `<span style="font-size:16px;font-weight:bold;">${name ? name.charAt(0).toUpperCase() : '?'}</span>`;
-    }
-
-    function getColorForMultiplier(mult) {
-        if (mult < 1.2) return '#ff4444';
-        if (mult < 1.5) return '#ff8800';
-        if (mult < 2.0) return '#FFD700';
-        if (mult < 3.0) return '#88ff88';
-        return '#00ff66';
     }
 
     // ========== РАКЕТА ==========
@@ -703,7 +683,7 @@
                     <span>${b.name}</span>
                 </div>
                 <span style="color:#FFD700;">⭐ ${b.amount}</span>
-                ${b.cashedAt ? `<span style="color:${getColorForMultiplier(b.cashedAt)};">✅ ${b.cashedAt.toFixed(2)}x</span>` : '<span style="color:#6b6b6b;">⏳</span>'}
+                ${b.cashedAt ? `<span class="win-multiplier">✅ ${b.cashedAt.toFixed(2)}x</span>` : '<span style="color:#6b6b6b;">⏳</span>'}
             </div>
         `).join('');
     }
@@ -796,7 +776,7 @@
     });
     socket.emit('rocket_get_history');
 
-    // ========== МИНЫ (ИСПРАВЛЕННЫЕ) ==========
+    // ========== МИНЫ ==========
     function minesBetAdj(type) {
         if (minesActive) { toast("Нельзя менять ставку во время игры!"); return; }
         if (type === 'half') minesBet = Math.floor(minesBet / 2);
@@ -843,11 +823,14 @@
         });
     }
 
+    let minesWaiting = false;
     function revealMineCell(index) {
-        if (!minesGridActive || !minesActive) { toast("Игра не активна"); return; }
+        if (minesWaiting || !minesGridActive || !minesActive) return;
         const cell = document.querySelector(`.mine-cell[data-idx="${index}"]`);
         if (!cell || cell.classList.contains('revealed')) return;
+        minesWaiting = true;
         socket.emit('mines_reveal', { telegram_id: uid, cellIndex: index }, (res) => {
+            minesWaiting = false;
             if (!res) return;
             if (res.exploded) {
                 toast('💣 ВЗРЫВ! Вы проиграли ставку.');
@@ -1013,7 +996,7 @@
             if (rouletteBets.length >= 2) {
                 spinBtn.disabled = false;
                 spinBtn.innerText = "🎲 КРУТИТЬ";
-                spinBtn.style.background = "linear-gradient(135deg, #FFD700, #DAA520)";
+                spinBtn.style.background = "linear-gradient(135deg, #FFD700, #FFA500)";
                 spinBtn.style.color = "#000";
             } else {
                 spinBtn.disabled = true;
@@ -1070,6 +1053,10 @@
                 spinRoulette();
             }
         }, 15000);
+    }
+
+    function stopRouletteAutoSpin() {
+        if (rouletteTimer) { clearInterval(rouletteTimer); rouletteTimer = null; }
     }
 
     function renderRouletteBets() {
@@ -1234,6 +1221,7 @@
         document.getElementById(`screen-${name}`).classList.add('active');
         if (name === 'leaders') socket.emit('get_leaderboard');
         if (name === 'roulette') startRouletteAutoSpin();
+        if (name !== 'roulette') stopRouletteAutoSpin();
     }
 
     function goTo(game) {
@@ -1242,6 +1230,7 @@
         if (game === 'mines') renderMinesBoard(false);
         if (game === 'roulette') startRouletteAutoSpin();
         if (game === 'crash') { updateButtonUI(); updateAutoSettingsLock(); }
+        if (game !== 'roulette') stopRouletteAutoSpin();
     }
 
     loadReferralStats();
