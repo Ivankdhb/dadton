@@ -283,7 +283,7 @@ io.on('connection', (socket) => {
         });
     });
     
-    // ===== МИНЫ =====
+    // ===== МИНЫ (УМЕНЬШЕННЫЕ ИКСЫ) =====
     socket.on('mines_start', (data, callback) => {
         const { telegram_id, betAmount, minesCount } = data;
         
@@ -349,7 +349,9 @@ io.on('connection', (socket) => {
         for (let i = 0; i < game.revealed; i++) {
             multiplier *= (safeCells - i) / (totalCells - i);
         }
+        // УМЕНЬШАЕМ МАКСИМАЛЬНЫЙ МНОЖИТЕЛЬ
         multiplier = 1 / multiplier;
+        if (multiplier > 3.5) multiplier = 3.5;
         
         const winAmount = Math.floor(game.bet * multiplier);
         
@@ -390,6 +392,7 @@ io.on('connection', (socket) => {
             multiplier *= (safeCells - i) / (totalCells - i);
         }
         multiplier = 1 / multiplier;
+        if (multiplier > 3.5) multiplier = 3.5;
         
         const winAmount = Math.floor(game.bet * multiplier);
         
@@ -520,11 +523,9 @@ server.listen(PORT, () => {
     ║   🚀 DADTON СЕРВЕР ЗАПУЩЕН          ║
     ║   http://localhost:${PORT}              ║
     ║                                      ║
-    ║   ⚡ СКОРОСТЬ РАКЕТЫ:                ║
-    ║   - до 1.5x: медленно (0.008)       ║
-    ║   - после 1.5x: плавное ускорение   ║
-    ║   💣 МИНЫ: правильные множители     ║
-    ║   🎡 РУЛЕТКА: честный рандом        ║
+    ║   ⚡ РАКЕТА: плавная скорость        ║
+    ║   💣 МИНЫ: макс икс 3.5x            ║
+    ║   🎡 РУЛЕТКА: честный рандом         ║
     ║   👥 РЕФЕРАЛЫ: 10% от оборота       ║
     ╚══════════════════════════════════════╝
     `);
