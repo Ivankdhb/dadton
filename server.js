@@ -37,6 +37,9 @@ db.serialize(() => {
 
 console.log('✅ База данных SQLite готова');
 
+const MAX_BET = 5000;
+const MIN_BET = 10;
+
 let rocketState = {
     status: 'waiting',
     currentMultiplier: 1.00,
@@ -115,6 +118,26 @@ function startRocketFlying() {
         
         let adjustedSpeed = speed * (delta / 100);
         rocketState.currentMultiplier += adjustedSpeed;
+        
+        // Автовывод (точный, без +0.01)
+        for (let bet of rocketState.bets) {
+            if (!bet.cashedAt && bet.autoCashout && rocketState.currentMultiplier >= (bet.autoCashout - 0.005)) {
+                const winAmount = Math.floor(bet.amount * rocketState.currentMultiplier);
+                bet.cashedAt = rocketState.currentMultiplier;
+                bet.winAmount = winAmount;
+                
+                db.run(`UPDATE users SET stars = stars + ?, turnover = turnover + ?, wins = wins + 1 WHERE telegram_id = ?`, 
+                    [winAmount, winAmount, bet.telegram_id]);
+                
+                io.emit('rocket_cashout_done', { 
+                    name: bet.name, 
+                    multiplier: rocketState.currentMultiplier, 
+                    win: winAmount, 
+                    amount: bet.amount, 
+                    avatar: bet.avatar 
+                });
+            }
+        }
         
         if (rocketState.currentMultiplier >= rocketState.crashPoint) {
             clearInterval(rocketInterval);
@@ -201,8 +224,13 @@ io.on('connection', (socket) => {
         
         const { telegram_id, name, amount, autoCashout, avatar } = data;
         
-        if (amount < 10) {
-            if (callback) callback({ success: false, error: 'Минимум 10 звёзд' });
+        if (amount < MIN_BET) {
+            if (callback) callback({ success: false, error: `Минимум ${MIN_BET} звёзд` });
+            return;
+        }
+        
+        if (amount > MAX_BET) {
+            if (callback) callback({ success: false, error: `Максимум ${MAX_BET} звёзд` });
             return;
         }
         
@@ -215,7 +243,7 @@ io.on('connection', (socket) => {
             db.run(`UPDATE users SET stars = stars - ?, games_played = games_played + 1 WHERE telegram_id = ?`, [amount, telegram_id]);
             
             rocketState.bets.push({
-                telegram_id, name, amount, autoCashout,
+                telegram_id, name, amount, autoCashout: parseFloat(autoCashout),
                 cashedAt: null, winAmount: null, avatar: avatar || '👤'
             });
             
@@ -254,27 +282,33 @@ io.on('connection', (socket) => {
         const { telegram_id, name } = data;
         const bet = rocketState.bets.find(b => b.telegram_id === telegram_id && !b.cashedAt);
         
-        if (bet) {
-            const winAmount = Math.floor(bet.amount * rocketState.currentMultiplier);
-            bet.cashedAt = rocketState.currentMultiplier;
-            bet.winAmount = winAmount;
-            
-            db.run(`UPDATE users SET stars = stars + ?, turnover = turnover + ?, wins = wins + 1 WHERE telegram_id = ?`, 
-                [winAmount, winAmount, telegram_id]);
-            
-            db.get(`SELECT referrer_id FROM users WHERE telegram_id = ?`, [telegram_id], (err, row) => {
-                if (row && row.referrer_id) {
-                    const referrerBonus = Math.floor(winAmount * 0.1);
-                    db.run(`UPDATE users SET stars = stars + ?, turnover = turnover + ? WHERE telegram_id = ?`, 
-                        [referrerBonus, referrerBonus, row.referrer_id]);
-                }
-            });
-            
-            io.emit('rocket_cashout_done', { name, multiplier: rocketState.currentMultiplier, win: winAmount, amount: bet.amount, avatar: bet.avatar });
-            if (callback) callback({ success: true, win: winAmount });
-        } else {
+        if (!bet) {
             if (callback) callback({ success: false, error: 'Ставка не найдена' });
+            return;
         }
+        
+        if (bet.cashedAt) {
+            if (callback) callback({ success: false, error: 'Уже забрали!' });
+            return;
+        }
+        
+        const winAmount = Math.floor(bet.amount * rocketState.currentMultiplier);
+        bet.cashedAt = rocketState.currentMultiplier;
+        bet.winAmount = winAmount;
+        
+        db.run(`UPDATE users SET stars = stars + ?, turnover = turnover + ?, wins = wins + 1 WHERE telegram_id = ?`, 
+            [winAmount, winAmount, telegram_id]);
+        
+        db.get(`SELECT referrer_id FROM users WHERE telegram_id = ?`, [telegram_id], (err, row) => {
+            if (row && row.referrer_id) {
+                const referrerBonus = Math.floor(winAmount * 0.1);
+                db.run(`UPDATE users SET stars = stars + ?, turnover = turnover + ? WHERE telegram_id = ?`, 
+                    [referrerBonus, referrerBonus, row.referrer_id]);
+            }
+        });
+        
+        io.emit('rocket_cashout_done', { name, multiplier: rocketState.currentMultiplier, win: winAmount, amount: bet.amount, avatar: bet.avatar });
+        if (callback) callback({ success: true, win: winAmount });
     });
     
     socket.on('rocket_get_history', () => {
@@ -283,12 +317,17 @@ io.on('connection', (socket) => {
         });
     });
     
-    // ===== МИНЫ (УМЕНЬШЕННЫЕ ИКСЫ) =====
+    // ===== МИНЫ =====
     socket.on('mines_start', (data, callback) => {
         const { telegram_id, betAmount, minesCount } = data;
         
-        if (betAmount < 10) {
-            if (callback) callback({ success: false, error: 'Минимум 10 звёзд' });
+        if (betAmount < MIN_BET) {
+            if (callback) callback({ success: false, error: `Минимум ${MIN_BET} звёзд` });
+            return;
+        }
+        
+        if (betAmount > MAX_BET) {
+            if (callback) callback({ success: false, error: `Максимум ${MAX_BET} звёзд` });
             return;
         }
         
@@ -336,6 +375,7 @@ io.on('connection', (socket) => {
         if (game.grid.includes(cellIndex)) {
             game.active = false;
             minesState.delete(telegram_id);
+            db.run(`UPDATE users SET games_played = games_played - 1 WHERE telegram_id = ?`, [telegram_id]);
             if (callback) callback({ success: false, exploded: true });
             return;
         }
@@ -344,18 +384,11 @@ io.on('connection', (socket) => {
         
         const totalCells = 25;
         const safeCells = totalCells - game.minesCount;
-        let multiplier = 1.0;
+        const multiplier = (safeCells - game.revealed + game.minesCount) / (safeCells - game.revealed);
+        const finalMultiplier = Math.min(multiplier, 3.5);
+        const winAmount = Math.floor(game.bet * finalMultiplier);
         
-        for (let i = 0; i < game.revealed; i++) {
-            multiplier *= (safeCells - i) / (totalCells - i);
-        }
-        // УМЕНЬШАЕМ МАКСИМАЛЬНЫЙ МНОЖИТЕЛЬ
-        multiplier = 1 / multiplier;
-        if (multiplier > 3.5) multiplier = 3.5;
-        
-        const winAmount = Math.floor(game.bet * multiplier);
-        
-        if (callback) callback({ success: true, revealed: game.revealed, multiplier: multiplier.toFixed(2), winAmount });
+        if (callback) callback({ success: true, revealed: game.revealed, multiplier: finalMultiplier.toFixed(2), winAmount });
         
         if (game.revealed === safeCells) {
             db.run(`UPDATE users SET stars = stars + ?, turnover = turnover + ?, wins = wins + 1 WHERE telegram_id = ?`, 
@@ -386,15 +419,9 @@ io.on('connection', (socket) => {
         
         const totalCells = 25;
         const safeCells = totalCells - game.minesCount;
-        let multiplier = 1.0;
-        
-        for (let i = 0; i < game.revealed; i++) {
-            multiplier *= (safeCells - i) / (totalCells - i);
-        }
-        multiplier = 1 / multiplier;
-        if (multiplier > 3.5) multiplier = 3.5;
-        
-        const winAmount = Math.floor(game.bet * multiplier);
+        const multiplier = (safeCells - game.revealed + game.minesCount) / (safeCells - game.revealed);
+        const finalMultiplier = Math.min(multiplier, 3.5);
+        const winAmount = Math.floor(game.bet * finalMultiplier);
         
         db.run(`UPDATE users SET stars = stars + ?, turnover = turnover + ?, wins = wins + 1 WHERE telegram_id = ?`, 
             [winAmount, winAmount, telegram_id]);
@@ -422,8 +449,18 @@ io.on('connection', (socket) => {
         
         const { telegram_id, name, amount, avatar } = data;
         
-        if (amount < 10) {
-            if (callback) callback({ success: false, error: 'Минимум 10 звёзд' });
+        if (amount < MIN_BET) {
+            if (callback) callback({ success: false, error: `Минимум ${MIN_BET} звёзд` });
+            return;
+        }
+        
+        if (amount > MAX_BET) {
+            if (callback) callback({ success: false, error: `Максимум ${MAX_BET} звёзд` });
+            return;
+        }
+        
+        if (rouletteBets.length >= 20) {
+            if (callback) callback({ success: false, error: 'Достигнут лимит игроков' });
             return;
         }
         
@@ -478,13 +515,18 @@ io.on('connection', (socket) => {
                 db.run(`UPDATE users SET stars = stars + ?, turnover = turnover + ?, wins = wins + 1 WHERE telegram_id = ?`, 
                     [winAmount, winAmount, winner.telegram_id]);
                 
-                db.get(`SELECT referrer_id FROM users WHERE telegram_id = ?`, [winner.telegram_id], (err, row) => {
-                    if (row && row.referrer_id) {
-                        const referrerBonus = Math.floor(winAmount * 0.1);
-                        db.run(`UPDATE users SET stars = stars + ?, turnover = turnover + ? WHERE telegram_id = ?`, 
-                            [referrerBonus, referrerBonus, row.referrer_id]);
+                // Реферальные бонусы с проигравших
+                for (let participant of rouletteBets) {
+                    if (participant.telegram_id !== winner.telegram_id) {
+                        db.get(`SELECT referrer_id FROM users WHERE telegram_id = ?`, [participant.telegram_id], (err, row) => {
+                            if (row && row.referrer_id) {
+                                const referrerBonus = Math.floor(participant.amount * 0.1);
+                                db.run(`UPDATE users SET stars = stars + ?, turnover = turnover + ? WHERE telegram_id = ?`, 
+                                    [referrerBonus, referrerBonus, row.referrer_id]);
+                            }
+                        });
                     }
-                });
+                }
                 
                 io.emit('roulette_result', { winner, total });
             } else {
@@ -511,6 +553,11 @@ io.on('connection', (socket) => {
     
     socket.on('disconnect', () => {
         console.log('👋 Игрок отключился');
+        rouletteBets = rouletteBets.filter(b => b.telegram_id !== socket.telegram_id);
+        if (rocketState.status === 'waiting') {
+            rocketState.bets = rocketState.bets.filter(b => b.telegram_id !== socket.telegram_id);
+        }
+        minesState.delete(socket.telegram_id);
     });
 });
 
@@ -523,10 +570,10 @@ server.listen(PORT, () => {
     ║   🚀 DADTON СЕРВЕР ЗАПУЩЕН          ║
     ║   http://localhost:${PORT}              ║
     ║                                      ║
-    ║   ⚡ РАКЕТА: плавная скорость        ║
-    ║   💣 МИНЫ: макс икс 3.5x            ║
-    ║   🎡 РУЛЕТКА: честный рандом         ║
-    ║   👥 РЕФЕРАЛЫ: 10% от оборота       ║
+    ║   ⚡ РАКЕТА: безопасные ставки       ║
+    ║   💣 МИНЫ: честные иксы             ║
+    ║   🎡 РУЛЕТКА: анти-фарм             ║
+    ║   👥 РЕФЕРАЛЫ: 10% с проигрыша      ║
     ╚══════════════════════════════════════╝
     `);
 });
