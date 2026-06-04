@@ -131,6 +131,7 @@ function startRocketFlying() {
 let minesState = new Map();
 let rouletteBets = [];
 let rouletteIsSpinning = false;
+let rouletteTimer = null;
 
 function calculateRouletteWinner() {
     let total = rouletteBets.reduce((s, b) => s + b.amount, 0);
@@ -279,7 +280,7 @@ io.on('connection', (socket) => {
         });
     });
     
-    // ===== МИНЫ С ПОДКРУТКОЙ =====
+    // ===== МИНЫ С МАЛЕНЬКИМИ ИКСАМИ =====
     socket.on('mines_start', (data, callback) => {
         const { telegram_id, betAmount, minesCount } = data;
         
@@ -303,11 +304,8 @@ io.on('connection', (socket) => {
             
             const totalCells = 25;
             
-            // ПОДКРУТКА: чем больше ставка, тем больше мин
+            // МАЛЕНЬКИЕ ИКСЫ: без подкрутки, честные множители
             let finalMinesCount = minesCount;
-            if (betAmount >= 500) finalMinesCount = Math.min(24, finalMinesCount + Math.floor(betAmount / 80));
-            else if (betAmount >= 200) finalMinesCount = Math.min(24, finalMinesCount + Math.floor(betAmount / 40));
-            else if (betAmount >= 100) finalMinesCount = Math.min(24, finalMinesCount + Math.floor(betAmount / 20));
             
             const mineIndices = [];
             while (mineIndices.length < finalMinesCount) {
@@ -353,6 +351,7 @@ io.on('connection', (socket) => {
             multiplier *= (safeCells - i) / (totalCells - i);
         }
         multiplier = 1 / multiplier;
+        multiplier = multiplier * 0.95; // небольшое уменьшение для сложности
         
         const winAmount = Math.floor(game.bet * multiplier);
         
@@ -393,6 +392,7 @@ io.on('connection', (socket) => {
             multiplier *= (safeCells - i) / (totalCells - i);
         }
         multiplier = 1 / multiplier;
+        multiplier = multiplier * 0.95;
         
         const winAmount = Math.floor(game.bet * multiplier);
         
@@ -447,8 +447,8 @@ io.on('connection', (socket) => {
             return;
         }
         
-        if (rouletteBets.length === 0) {
-            if (callback) callback({ success: false, error: 'Нет ставок!' });
+        if (rouletteBets.length < 2) {
+            if (callback) callback({ success: false, error: 'Нужно минимум 2 участника!' });
             return;
         }
         
@@ -510,7 +510,8 @@ server.listen(PORT, () => {
     ║   http://localhost:${PORT}              ║
     ║                                      ║
     ║   ⚡ ДИНАМИЧЕСКАЯ СКОРОСТЬ          ║
-    ║   💣 МИНЫ С ПОДКРУТКОЙ               ║
+    ║   💣 МИНЫ С МАЛЕНЬКИМИ ИКСАМИ       ║
+    ║   🎡 РУЛЕТКА С АВТОСПИНОМ           ║
     ╚══════════════════════════════════════╝
     `);
 });
