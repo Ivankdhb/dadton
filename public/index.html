@@ -15,7 +15,6 @@
             color: white; 
             padding-bottom: 65px; 
         }
-        
         .glass-card {
             background: rgba(30, 58, 138, 0.2);
             backdrop-filter: blur(12px);
@@ -333,6 +332,12 @@
         return '#10b981';
     }
     
+    // Функция для точного сравнения (без погрешности)
+    function isAutoCashoutTrigger(current, target) {
+        // Округляем до 2 знаков и сравниваем
+        return Math.abs(current - target) < 0.005;
+    }
+    
     function updateCrashBet() {
         if(hasActiveBet) { toast("Нельзя менять ставку после её создания"); return; }
         let val = parseInt(document.getElementById('crashBetInput').value);
@@ -383,6 +388,7 @@
         const input = document.getElementById('autoCashoutVal');
         if(autoEnabled) {
             input.disabled = false;
+            autoValue = parseFloat(input.value);
         } else {
             input.disabled = true;
         }
@@ -462,10 +468,15 @@
         const cont = document.getElementById('crashBets');
         if(!cont) return;
         if(!betsList.length) { cont.innerHTML = '<div class="empty">Нет ставок</div>'; return; }
-        cont.innerHTML = betsList.map(b => `<div class="bet-item"><div style="display:flex; align-items:center; gap:8px;"><div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#0098ea,#0066cc);display:flex;align-items:center;justify-content:center;overflow:hidden;">${getAvatarHtml(b.avatar, b.name)}</div><span>${b.name}</span></div><span>⭐ ${b.amount}</span>${b.cashedAt ? `<span style="color:${getColorForMultiplier(b.cashedAt)};">✅ ${b.cashedAt.toFixed(2)}x</span>` : '<span style="color:#fbbf24;">⏳</span>'}</div>`).join('');
+        cont.innerHTML = betsList.map(b => {
+            // Зелёный цвет для успешно забранных ставок
+            const cashoutColor = '#10b981';
+            return `<div class="bet-item"><div style="display:flex; align-items:center; gap:8px;"><div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#0098ea,#0066cc);display:flex;align-items:center;justify-content:center;overflow:hidden;">${getAvatarHtml(b.avatar, b.name)}</div><span>${b.name}</span></div><span>⭐ ${b.amount}</span>${b.cashedAt ? `<span style="color: ${cashoutColor};">✅ ${b.cashedAt.toFixed(2)}x</span>` : '<span style="color:#fbbf24;">⏳</span>'}</div>`;
+        }).join('');
     }
     
     document.getElementById('crashBetInput').addEventListener('change', updateCrashBet);
+    document.getElementById('autoCashoutVal').addEventListener('change', function() { if(!hasActiveBet && autoEnabled) autoValue = parseFloat(this.value); });
     document.getElementById('autoCashoutToggle').addEventListener('change', toggleAutoSetting);
     document.getElementById('minesBetInput').addEventListener('change', function() { if(!minesActive) { let val = parseInt(this.value); if(isNaN(val)) val = 20; minesBet = Math.min(Math.max(val, 10), stars); this.value = minesBet; updateUI(); } });
     document.getElementById('rouletteBetInput').addEventListener('change', function() { if(!rouletteHasBet) { let val = parseInt(this.value); if(isNaN(val)) val = 10; rouletteBet = Math.min(Math.max(val, 10), stars); this.value = rouletteBet; updateUI(); } });
@@ -481,10 +492,10 @@
     });
     socket.on('rocket_start', () => { isFlying=true; document.getElementById('crashMult').innerHTML='1.00x'; document.getElementById('crashMult').className='multiplier flying'; updateButtonUI(); });
     socket.on('rocket_multiplier', (m) => { 
-        currentMultiplier=m; 
-        document.getElementById('crashMult').innerHTML=m.toFixed(2)+'x'; 
-        // АВТОВЫВОД - проверяем каждое обновление
-        if(isFlying && hasActiveBet && myBet && !myBet.cashed && autoEnabled && currentMultiplier >= myBet.autoCashout - 0.005) {
+        currentMultiplier = m; 
+        document.getElementById('crashMult').innerHTML = m.toFixed(2) + 'x'; 
+        // АВТОВЫВОД - точное сравнение
+        if(isFlying && hasActiveBet && myBet && !myBet.cashed && autoEnabled && currentMultiplier >= myBet.autoCashout) {
             cashout();
         }
     });
@@ -518,7 +529,10 @@
             myBet = null; 
         } 
         const bb = betsList.find(b=>b.name === d.name && !b.cashedAt); 
-        if(bb){ bb.cashedAt = d.multiplier; bb.winAmount = d.win; } 
+        if(bb){ 
+            bb.cashedAt = d.multiplier; 
+            bb.winAmount = d.win; 
+        } 
         renderBets(); 
         updateAutoSettingsLock();
         updateButtonUI(); 
