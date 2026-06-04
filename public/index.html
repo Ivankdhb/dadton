@@ -24,8 +24,9 @@
         .btn:active { transform: scale(0.98); }
         .btn-cancel { background: #ef4444; color: white; }
         .btn-cashout { background: #00e699; color: black; }
-        .preset-row { display: flex; gap: 8px; margin: 12px 0; }
-        .preset { background: #1e295d; padding: 8px; border-radius: 10px; flex: 1; text-align: center; cursor: pointer; font-weight: 700; }
+        .preset-row { display: flex; gap: 8px; margin: 12px 0; flex-wrap: wrap; }
+        .preset { background: #1e295d; padding: 8px; border-radius: 10px; flex: 1; text-align: center; cursor: pointer; font-weight: 700; min-width: 60px; }
+        .bet-input { background: #0a1128; border: 1px solid #2a3450; color: #ffaa00; padding: 8px 12px; border-radius: 30px; text-align: center; font-weight: 700; flex: 2; }
         .crash-display { background: radial-gradient(circle, #1b1947, #101935); height: 140px; border-radius: 16px; display: flex; flex-direction: column; align-items: center; justify-content: center; margin-bottom: 12px; }
         .multiplier { font-size: 44px; font-weight: 900; }
         .multiplier.flying { color: #00e699; }
@@ -34,7 +35,9 @@
         .history { display: flex; gap: 8px; overflow-x: auto; margin-bottom: 12px; }
         .history-item { background: #1e295d; padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 600; }
         .bets-container { max-height: 250px; overflow-y: auto; }
-        .bet-item { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; background: rgba(0,0,0,0.3); border-radius: 50px; margin-bottom: 6px; font-size: 12px; }
+        .bet-item { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; background: rgba(0,0,0,0.3); border-radius: 50px; margin-bottom: 6px; font-size: 12px; flex-wrap: wrap; gap: 5px; }
+        .bet-player { display: flex; align-items: center; gap: 8px; }
+        .bet-avatar { width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg, #f59e0b, #ef4444); display: flex; align-items: center; justify-content: center; overflow: hidden; }
         .empty { text-align: center; padding: 20px; color: #6b7c96; }
         .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; height: 56px; background: #101935; display: flex; justify-content: space-around; align-items: center; border-top: 1px solid rgba(255,255,255,0.05); }
         .nav-item { display: flex; flex-direction: column; align-items: center; gap: 2px; color: #6b7c96; cursor: pointer; }
@@ -45,10 +48,7 @@
         .panel-value { font-size: 24px; font-weight: 800; text-align: center; color: #ffaa00; }
         .panel-label { text-align: center; font-size: 11px; color: #6b7c96; margin-bottom: 4px; }
         .auto-card { background: linear-gradient(135deg, #1a1f3a, #0f1228); border-radius: 20px; padding: 12px 16px; margin-bottom: 12px; }
-        .auto-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
-        .auto-row-left { display: flex; align-items: center; gap: 12px; }
-        .auto-icon { font-size: 20px; }
-        .auto-label { font-weight: 600; font-size: 14px; }
+        .auto-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
         .auto-switch { position: relative; display: inline-block; width: 52px; height: 26px; }
         .auto-switch input { opacity: 0; width: 0; height: 0; }
         .auto-slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #334155; transition: 0.2s; border-radius: 26px; }
@@ -57,23 +57,9 @@
         input:checked + .auto-slider:before { transform: translateX(26px); }
         .auto-value-input { background: #0a1128; border: 1px solid #2a3450; color: #ffaa00; padding: 8px 12px; border-radius: 30px; width: 80px; text-align: center; font-weight: 700; }
         
-        /* МИНЫ - мягкие знаки */
+        /* МИНЫ */
         .mines-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin: 16px 0; }
-        .mine-cell { 
-            aspect-ratio: 1; 
-            background: linear-gradient(135deg, #1e295d, #162045); 
-            border-radius: 16px; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            font-size: 28px; 
-            font-weight: 400; 
-            color: #8b9dc3; 
-            cursor: pointer; 
-            transition: all 0.1s ease; 
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-            border: 1px solid rgba(255,255,255,0.05);
-        }
+        .mine-cell { aspect-ratio: 1; background: linear-gradient(135deg, #1e295d, #162045); border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: 400; color: #8b9dc3; cursor: pointer; transition: all 0.1s ease; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
         .mine-cell:active { transform: scale(0.95); }
         .mine-cell.revealed-safe { background: linear-gradient(135deg, #00e699, #00b377); color: white; }
         .mine-cell.revealed-mine { background: linear-gradient(135deg, #ff4d73, #cc0033); color: white; }
@@ -84,7 +70,7 @@
         .leader-item { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-radius: 14px; background: #101935; }
         .leader-rank { width: 50px; font-weight: 800; font-size: 18px; text-align: center; }
         .leader-info { display: flex; align-items: center; gap: 12px; flex: 1; }
-        .leader-avatar { width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, #f59e0b, #ef4444); display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: bold; overflow: hidden; }
+        .leader-avatar { width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, #f59e0b, #ef4444); display: flex; align-items: center; justify-content: center; overflow: hidden; }
         .leader-name { font-weight: 600; }
         .leader-score { color: #ffaa00; font-weight: 700; }
         .leader-item.rank-1 { background: linear-gradient(135deg, #ffd700, #ffaa00); }
@@ -112,8 +98,9 @@
         
         /* РУЛЕТКА */
         .roulette-container { display: flex; justify-content: center; margin: 20px 0; position: relative; }
-        .roulette-wheel { width: 200px; height: 200px; border-radius: 50%; transition: transform 3s cubic-bezier(0.2, 0.8, 0.3, 1); }
-        .roulette-pointer { position: absolute; top: -20px; left: 50%; transform: translateX(-50%); font-size: 30px; filter: drop-shadow(0 0 5px black); }
+        .roulette-wheel { width: 200px; height: 200px; border-radius: 50%; transition: transform 3s cubic-bezier(0.2, 0.8, 0.3, 1); box-shadow: 0 0 10px rgba(0,0,0,0.3); }
+        .roulette-pointer { position: absolute; top: -20px; left: 50%; transform: translateX(-50%); font-size: 30px; filter: drop-shadow(0 0 5px black); z-index: 10; }
+        .roulette-timer { text-align: center; font-size: 14px; color: #f59e0b; margin-top: 8px; }
         
         .avatar-img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
     </style>
@@ -142,6 +129,8 @@
         <div class="panel-label">Сумма ставки</div>
         <div class="panel-value">⭐ <span id="crashBet">10</span></div>
         <div class="preset-row">
+            <input type="number" id="customBetInput" class="bet-input" placeholder="Своя ставка" value="10" min="10">
+            <div class="preset" onclick="setCustomBet()">Установить</div>
             <div class="preset" onclick="changeBet('min')">MIN</div>
             <div class="preset" onclick="changeBet('add')">+10</div>
             <div class="preset" onclick="changeBet('max')">MAX</div>
@@ -149,7 +138,7 @@
         <div class="auto-card">
             <div class="auto-row">
                 <div class="auto-row-left"><span class="auto-icon">⚡</span><span class="auto-label">Автовывод</span></div>
-                <div><input type="number" id="autoCashoutVal" class="auto-value-input" value="1.5" step="0.05" min="1.05" max="10"></div>
+                <div><input type="number" id="autoCashoutVal" class="auto-value-input" value="1.5" step="0.01" min="1.01" max="10"></div>
             </div>
             <div class="auto-row" style="margin-top:8px;">
                 <span class="auto-label">Включить авто</span>
@@ -165,12 +154,14 @@
     <div class="bets-container" id="crashBets"></div>
 </div>
 
-<!-- МИНЫ 5x5 (ИСПРАВЛЕННЫЕ - ОДНА КНОПКА, МЯГКИЕ ЗНАКИ) -->
+<!-- МИНЫ -->
 <div id="mines" class="screen">
     <div class="widget">
         <div class="panel-label">Ставка</div>
         <div class="panel-value">⭐ <span id="minesBet">20</span></div>
         <div class="preset-row">
+            <input type="number" id="minesCustomBet" class="bet-input" placeholder="Своя ставка" value="20" min="10">
+            <div class="preset" onclick="setMinesCustomBet()">Установить</div>
             <div class="preset" onclick="minesBetAdj('half')">½</div>
             <div class="preset" onclick="minesBetAdj('double')">×2</div>
             <div class="preset" onclick="minesBetAdj('max')">MAX</div>
@@ -178,38 +169,32 @@
         <div class="auto-row" style="justify-content: space-between; margin-top: 12px;">
             <span class="auto-label">💣 Количество мин</span>
             <select id="minesCountSelect" style="background:#0a1128; color:white; padding:6px 12px; border-radius:20px; border:1px solid #2a3450;">
-                <option value="1">1 мина (x1.08)</option>
-                <option value="2">2 мины (x1.16)</option>
-                <option value="3">3 мины (x1.25)</option>
-                <option value="4">4 мины (x1.35)</option>
-                <option value="5">5 мин (x1.46)</option>
-                <option value="6">6 мин (x1.58)</option>
-                <option value="7">7 мин (x1.71)</option>
-                <option value="8">8 мин (x1.86)</option>
-                <option value="9">9 мин (x2.02)</option>
-                <option value="10">10 мин (x2.20)</option>
-                <option value="12">12 мин (x2.63)</option>
-                <option value="14">14 мин (x3.17)</option>
-                <option value="16">16 мин (x3.86)</option>
-                <option value="18">18 мин (x4.75)</option>
-                <option value="20">20 мин (x5.94)</option>
-                <option value="22">22 мины (x7.56)</option>
-                <option value="24">24 мины (x9.87)</option>
+                <option value="1">1 мина (x1.04)</option>
+                <option value="2">2 мины (x1.08)</option>
+                <option value="3">3 мины (x1.12)</option>
+                <option value="4">4 мины (x1.17)</option>
+                <option value="5">5 мин (x1.22)</option>
+                <option value="6">6 мин (x1.28)</option>
+                <option value="7">7 мин (x1.35)</option>
+                <option value="8">8 мин (x1.43)</option>
+                <option value="9">9 мин (x1.52)</option>
+                <option value="10">10 мин (x1.62)</option>
+                <option value="12">12 мин (x1.86)</option>
+                <option value="14">14 мин (x2.17)</option>
+                <option value="16">16 мин (x2.58)</option>
+                <option value="18">18 мин (x3.16)</option>
+                <option value="20">20 мин (x4.00)</option>
+                <option value="22">22 мины (x5.33)</option>
+                <option value="24">24 мины (x7.00)</option>
             </select>
         </div>
-        <!-- ЕДИНСТВЕННАЯ КНОПКА -->
         <div class="btn" id="minesBtn" onclick="minesClick()" style="margin-top: 12px;">💣 Новая игра</div>
     </div>
-    
-    <!-- ПОЛЕ 5x5 (мягкий знак - точка) -->
     <div class="mines-grid" id="minesBoard"></div>
-    
-    <!-- МНОЖИТЕЛЬ -->
     <div style="text-align: center; margin: 12px 0;">
         <span style="color:#6b7c96;">Множитель: </span>
         <span id="minesMult" style="font-size: 28px; font-weight: 800; color: #ffaa00;">1.00x</span>
     </div>
-    
     <div style="margin-top: 8px; font-size: 11px; color: #6b7c96; text-align: center;">
         ⭐ Открывайте клетки. Чем больше мин, тем выше множитель
     </div>
@@ -221,16 +206,18 @@
         <div class="roulette-pointer">▼</div>
         <canvas id="rouletteCanvas" width="200" height="200" class="roulette-wheel"></canvas>
     </div>
+    <div class="roulette-timer" id="rouletteTimer"></div>
     <div class="widget">
         <div class="panel-label">Сумма ставки</div>
         <div class="panel-value">⭐ <span id="rouletteBet">10</span></div>
         <div class="preset-row">
+            <input type="number" id="rouletteCustomBet" class="bet-input" placeholder="Своя ставка" value="10" min="10">
+            <div class="preset" onclick="setRouletteCustomBet()">Установить</div>
             <div class="preset" onclick="rouletteBetAdj('min')">MIN</div>
             <div class="preset" onclick="rouletteBetAdj('add')">+10</div>
             <div class="preset" onclick="rouletteBetAdj('max')">MAX</div>
         </div>
         <div class="btn" onclick="placeRoulette()">📥 Сделать ставку</div>
-        <div class="btn" style="margin-top: 8px;" onclick="spinRoulette()">🎲 КРУТИТЬ</div>
     </div>
     <div style="display: flex; justify-content: space-between;">
         <span>Участники</span>
@@ -294,6 +281,7 @@
     let isFlying = false;
     let crashHistory = [];
     let currentMultiplier = 1;
+    let cancelTimeout = null;
     
     // МИНЫ
     let minesBet = 20;
@@ -306,9 +294,12 @@
     let minesCurrentWinAmount = 0;
     
     // РУЛЕТКА
-    let rouletteBet = 10, rouletteBets = [], rouletteSpinning = false;
+    let rouletteBet = 10;
+    let rouletteBets = [];
+    let rouletteSpinning = false;
+    let rouletteTimer = null;
+    let rouletteCountdown = 0;
     
-    // ========== ОБЩИЕ ФУНКЦИИ ==========
     function toast(msg) { const t = document.getElementById('toast'); t.innerText = msg; t.style.display = 'block'; setTimeout(() => t.style.display = 'none', 2000); }
     
     function updateUI() {
@@ -337,6 +328,26 @@
     }
     
     // ========== РАКЕТА ==========
+    function setCustomBet() {
+        let val = parseInt(document.getElementById('customBetInput').value);
+        if(val < 10) val = 10;
+        if(val > stars) val = stars;
+        currentBet = val;
+        document.getElementById('customBetInput').value = currentBet;
+        updateUI();
+    }
+    
+    function changeBet(type) {
+        if(myBet) { toast("Нельзя менять ставку после её создания"); return; }
+        if(type === 'min') currentBet = 10;
+        if(type === 'add') currentBet += 10;
+        if(type === 'max') currentBet = stars;
+        if(currentBet < 10) currentBet = 10;
+        if(currentBet > stars) currentBet = stars;
+        document.getElementById('customBetInput').value = currentBet;
+        updateUI();
+    }
+    
     function updateButtonUI() {
         const btn = document.getElementById('crashBtn');
         if(!btn) return;
@@ -354,16 +365,6 @@
             btn.innerText = "⏳ Ожидание";
             btn.style.background = "#2a3448";
         }
-    }
-    
-    function changeBet(type) {
-        if(myBet) { toast("Нельзя менять ставку после её создания"); return; }
-        if(type === 'min') currentBet = 10;
-        if(type === 'add') currentBet += 10;
-        if(type === 'max') currentBet = stars;
-        if(currentBet < 10) currentBet = 10;
-        if(currentBet > stars) currentBet = stars;
-        updateUI();
     }
     
     function rocketAction() {
@@ -402,7 +403,7 @@
         const cont = document.getElementById('crashBets');
         if(!cont) return;
         if(!betsList.length) { cont.innerHTML = '<div class="empty">Нет ставок</div>'; return; }
-        cont.innerHTML = betsList.map(b => `<div class="bet-item"><span><div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#f59e0b,#ef4444);display:inline-flex;align-items:center;justify-content:center;margin-right:8px;overflow:hidden;">${getAvatarHtml(b.avatar, b.name)}</div>${b.name}</span><span>⭐ ${b.amount}</span>${b.cashedAt ? `<span style="color:#00e699;">✅ ${b.cashedAt.toFixed(2)}x</span>` : '<span style="color:#f59e0b;">⏳</span>'}</div>`).join('');
+        cont.innerHTML = betsList.map(b => `<div class="bet-item"><div class="bet-player"><div class="bet-avatar">${getAvatarHtml(b.avatar, b.name)}</div><span>${b.name}</span></div><span>⭐ ${b.amount}</span>${b.cashedAt ? `<span style="color:#00e699;">✅ ${b.cashedAt.toFixed(2)}x</span>` : '<span style="color:#f59e0b;">⏳</span>'}</div>`).join('');
     }
     
     socket.on('rocket_countdown', (s) => {
@@ -480,6 +481,15 @@
     socket.emit('rocket_get_history');
     
     // ========== МИНЫ ==========
+    function setMinesCustomBet() {
+        let val = parseInt(document.getElementById('minesCustomBet').value);
+        if(val < 10) val = 10;
+        if(val > stars) val = stars;
+        minesBet = val;
+        document.getElementById('minesCustomBet').value = minesBet;
+        updateUI();
+    }
+    
     function minesBetAdj(type) {
         if (minesActive) { toast("Нельзя менять ставку во время игры!"); return; }
         if (type === 'half') minesBet = Math.floor(minesBet / 2);
@@ -487,6 +497,7 @@
         if (type === 'max') minesBet = stars;
         if (minesBet < 10) minesBet = 10;
         if (minesBet > stars) minesBet = stars;
+        document.getElementById('minesCustomBet').value = minesBet;
         updateUI();
     }
     
@@ -506,7 +517,7 @@
                 minesActive = true;
                 minesGridActive = true;
                 minesBetAmount = minesBet;
-                minesMinesCount = minesCount;
+                minesMinesCount = res.minesCount || minesCount;
                 minesRevealed = 0;
                 minesMult = 1.00;
                 minesCurrentWinAmount = 0;
@@ -515,7 +526,7 @@
                 document.getElementById('minesBtn').classList.add('btn-cashout');
                 refreshBalance();
                 renderMinesBoard(true);
-                toast(`💣 Игра началась! ${minesCount} мин. Удачи!`);
+                toast(`💣 Игра началась! ${minesMinesCount} мин. Удачи!`);
             } else toast(res?.error || 'Ошибка');
         });
     }
@@ -582,25 +593,31 @@
         for (let i = 0; i < 25; i++) {
             const cell = document.createElement('div');
             cell.className = 'mine-cell';
-            cell.innerHTML = '◌'; // мягкий знак (точка)
+            cell.innerHTML = '◌';
             cell.setAttribute('data-idx', i);
-            if (active) {
-                cell.onclick = (function(idx) { return function() { revealMineCell(idx); }; })(i);
-            } else {
-                cell.style.opacity = '0.5';
-                cell.style.cursor = 'not-allowed';
-            }
+            if (active) { cell.onclick = (function(idx) { return function() { revealMineCell(idx); }; })(i); }
+            else { cell.style.opacity = '0.5'; cell.style.cursor = 'not-allowed'; }
             board.appendChild(cell);
         }
     }
     
     // ========== РУЛЕТКА ==========
+    function setRouletteCustomBet() {
+        let val = parseInt(document.getElementById('rouletteCustomBet').value);
+        if(val < 10) val = 10;
+        if(val > stars) val = stars;
+        rouletteBet = val;
+        document.getElementById('rouletteCustomBet').value = rouletteBet;
+        updateUI();
+    }
+    
     function rouletteBetAdj(t) {
         if(t==='min') rouletteBet=10;
         if(t==='add') rouletteBet+=10;
         if(t==='max') rouletteBet=stars;
         if(rouletteBet<10) rouletteBet=10;
         if(rouletteBet>stars) rouletteBet=stars;
+        document.getElementById('rouletteCustomBet').value = rouletteBet;
         updateUI();
     }
     
@@ -610,7 +627,25 @@
         socket.emit('roulette_place_bet', { telegram_id: uid, name: pname, amount: rouletteBet, avatar: userAvatarUrl || pname.charAt(0) }, (res) => { if(res?.success) refreshBalance(); else toast(res?.error); });
     }
     
-    function spinRoulette() { if(rouletteSpinning) { toast("Рулетка уже крутится"); return; } if(rouletteBets.length===0) { toast("Нет ставок"); return; } socket.emit('roulette_spin'); }
+    function startRouletteTimer() {
+        if(rouletteTimer) clearInterval(rouletteTimer);
+        rouletteCountdown = 15;
+        const timerEl = document.getElementById('rouletteTimer');
+        if(timerEl) timerEl.innerText = `Следующий спин через ${rouletteCountdown} сек`;
+        rouletteTimer = setInterval(() => {
+            if(rouletteCountdown <= 1) {
+                clearInterval(rouletteTimer);
+                if(rouletteBets.length >= 2) {
+                    socket.emit('roulette_spin');
+                } else {
+                    startRouletteTimer();
+                }
+            } else {
+                rouletteCountdown--;
+                if(timerEl) timerEl.innerText = `Следующий спин через ${rouletteCountdown} сек`;
+            }
+        }, 1000);
+    }
     
     function renderRouletteBets() {
         const cont = document.getElementById('rouletteBetsList');
@@ -619,24 +654,94 @@
         const total = rouletteBets.reduce((s,b)=>s+b.amount,0);
         if(totalSpan) totalSpan.innerText = `Общая ставка: ${total}⭐`;
         if(!rouletteBets.length) { cont.innerHTML = '<div class="empty">Нет ставок</div>'; return; }
-        cont.innerHTML = rouletteBets.map(b => `<div class="bet-item"><span><div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#f59e0b,#ef4444);display:inline-flex;align-items:center;justify-content:center;margin-right:8px;overflow:hidden;">${getAvatarHtml(b.avatar, b.name)}</div>${b.name}</span><span>⭐ ${b.amount}</span><span style="color:#00e699;">шанс ${total ? ((b.amount/total)*100).toFixed(1):0}%</span></div>`).join('');
+        cont.innerHTML = rouletteBets.map(b => `<div class="bet-item"><div class="bet-player"><div class="bet-avatar">${getAvatarHtml(b.avatar, b.name)}</div><span>${b.name}</span></div><span>⭐ ${b.amount}</span><span style="color:#00e699;">шанс ${total ? ((b.amount/total)*100).toFixed(1):0}%</span></div>`).join('');
+        updateRouletteWheelSegments();
     }
     
-    socket.on('roulette_update', (b) => { rouletteBets = b; renderRouletteBets(); });
-    socket.on('roulette_spinning', () => { rouletteSpinning = true; toast("🎡 Рулетка крутится..."); });
-    socket.on('roulette_result', (d) => { rouletteSpinning = false; if(d.winner) { toast(`🏆 Победитель: ${d.winner.name}! +${d.total}⭐`); if(d.winner.telegram_id===uid) { gameHistory.unshift({ game: 'Рулетка', amount: d.total, time: new Date().toLocaleTimeString() }); if(gameHistory.length>10) gameHistory.pop(); } } else toast("Ничья"); refreshBalance(); });
-    
-    function drawRouletteWheel() {
+    function updateRouletteWheelSegments() {
         const canvas = document.getElementById('rouletteCanvas');
         if(!canvas) return;
         const ctx = canvas.getContext('2d');
         const size=200, cx=size/2, cy=size/2, r=size/2-5;
-        const seg=['⚡','⭐','🎲','💎','🎯','🏆','💰','🍀'];
-        const step=(Math.PI*2)/seg.length;
+        const colors = ['#2a3450', '#3a4560'];
         ctx.clearRect(0,0,size,size);
-        for(let i=0;i<seg.length;i++){ const start=i*step, end=(i+1)*step; ctx.beginPath(); ctx.moveTo(cx,cy); ctx.arc(cx,cy,r,start,end); ctx.fillStyle=i%2===0?'#ff5277':'#ffaa00'; ctx.fill(); ctx.strokeStyle='#fff'; ctx.lineWidth=2; ctx.stroke(); ctx.save(); ctx.translate(cx,cy); ctx.rotate(start+step/2); ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.font='bold 24px sans-serif'; ctx.fillStyle='#fff'; ctx.fillText(seg[i],r*0.7,0); ctx.restore(); }
-        ctx.beginPath(); ctx.arc(cx,cy,15,0,Math.PI*2); ctx.fillStyle='#1e295d'; ctx.fill(); ctx.strokeStyle='#ffaa00'; ctx.lineWidth=3; ctx.stroke();
+        if(rouletteBets.length === 0) {
+            ctx.fillStyle = '#1e295d';
+            ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.fill();
+            ctx.fillStyle = '#6b7c96';
+            ctx.font = 'bold 16px sans-serif';
+            ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.fillText('Нет ставок', cx, cy);
+        } else {
+            const total = rouletteBets.reduce((s,b)=>s+b.amount,0);
+            let startAngle = -Math.PI/2;
+            for(let i=0; i<rouletteBets.length; i++) {
+                const bet = rouletteBets[i];
+                const angle = (bet.amount / total) * Math.PI * 2;
+                const endAngle = startAngle + angle;
+                ctx.beginPath(); ctx.moveTo(cx,cy); ctx.arc(cx,cy,r,startAngle,endAngle);
+                ctx.fillStyle = colors[i % colors.length];
+                ctx.fill();
+                ctx.save(); ctx.translate(cx,cy); ctx.rotate(startAngle + angle/2);
+                ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                ctx.font = 'bold 12px sans-serif';
+                ctx.fillStyle = '#fff';
+                ctx.fillText(bet.name.length > 8 ? bet.name.slice(0,6)+'..' : bet.name, r*0.6, 0);
+                ctx.restore();
+                startAngle = endAngle;
+            }
+        }
+        ctx.beginPath(); ctx.arc(cx,cy,15,0,Math.PI*2);
+        ctx.fillStyle = '#1e295d'; ctx.fill();
+        ctx.strokeStyle = '#ffaa00'; ctx.lineWidth = 3; ctx.stroke();
     }
+    
+    socket.on('roulette_update', (b) => {
+        const hadBets = rouletteBets.length > 0;
+        const hasBetsNow = b.length > 0;
+        rouletteBets = b;
+        renderRouletteBets();
+        if(!hadBets && hasBetsNow && b.length >= 2) {
+            startRouletteTimer();
+        } else if(hadBets && b.length < 2 && rouletteTimer) {
+            clearInterval(rouletteTimer);
+            const timerEl = document.getElementById('rouletteTimer');
+            if(timerEl) timerEl.innerText = '';
+        }
+    });
+    
+    socket.on('roulette_spinning', () => {
+        rouletteSpinning = true;
+        if(rouletteTimer) clearInterval(rouletteTimer);
+        const timerEl = document.getElementById('rouletteTimer');
+        if(timerEl) timerEl.innerText = '🎡 КРУТИТСЯ...';
+        const canvas = document.getElementById('rouletteCanvas');
+        if(canvas) {
+            let spin = 1800 + Math.random() * 360;
+            canvas.style.transform = `rotate(${spin}deg)`;
+        }
+        toast("🎡 Рулетка крутится...");
+    });
+    
+    socket.on('roulette_result', (d) => {
+        rouletteSpinning = false;
+        if(rouletteTimer) clearInterval(rouletteTimer);
+        const timerEl = document.getElementById('rouletteTimer');
+        if(timerEl) timerEl.innerText = '';
+        if(d.winner) {
+            toast(`🏆 Победитель: ${d.winner.name}! +${d.total}⭐`);
+            if(d.winner.telegram_id === uid) {
+                gameHistory.unshift({ game: 'Рулетка', amount: d.total, time: new Date().toLocaleTimeString() });
+                if(gameHistory.length > 10) gameHistory.pop();
+            }
+        } else toast("Ничья");
+        refreshBalance();
+        const canvas = document.getElementById('rouletteCanvas');
+        if(canvas) canvas.style.transform = 'rotate(0deg)';
+        if(rouletteBets.length >= 2) startRouletteTimer();
+    });
+    
+    function drawRouletteWheel() { updateRouletteWheelSegments(); }
     
     // ========== ЛИДЕРЫ ==========
     socket.on('leaderboard_data', (data) => {
@@ -668,8 +773,21 @@
     }
     
     // ========== НАВИГАЦИЯ ==========
-    function tab(name, el) { document.querySelectorAll('.nav-item').forEach(i=>i.classList.remove('active')); el.classList.add('active'); document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(name).classList.add('active'); if(name==='leaders') socket.emit('get_leaderboard'); if(name==='roulette') drawRouletteWheel(); }
-    function goTo(game) { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(game).classList.add('active'); if(game==='mines') renderMinesBoard(false); if(game==='roulette') drawRouletteWheel(); if(game==='crash') updateButtonUI(); }
+    function tab(name, el) {
+        document.querySelectorAll('.nav-item').forEach(i=>i.classList.remove('active')); el.classList.add('active');
+        document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+        document.getElementById(name).classList.add('active');
+        if(name==='leaders') socket.emit('get_leaderboard');
+        if(name==='roulette') { drawRouletteWheel(); if(rouletteBets.length >= 2 && !rouletteSpinning && !rouletteTimer) startRouletteTimer(); }
+    }
+    
+    function goTo(game) {
+        document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+        document.getElementById(game).classList.add('active');
+        if(game==='mines') renderMinesBoard(false);
+        if(game==='roulette') { drawRouletteWheel(); if(rouletteBets.length >= 2 && !rouletteSpinning && !rouletteTimer) startRouletteTimer(); }
+        if(game==='crash') updateButtonUI();
+    }
     
     loadReferralStats();
     switchSubtab('refs', document.querySelector('.subtab-btn.active'));
