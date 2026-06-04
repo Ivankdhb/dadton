@@ -15,7 +15,6 @@
             color: #fff;
             padding-bottom: 75px;
         }
-        /* Хедер */
         .luxury-header {
             display: flex;
             justify-content: space-between;
@@ -31,11 +30,10 @@
         .logo { font-size: 22px; font-weight: 900; background: linear-gradient(135deg, #FFD700, #FFF8DC); -webkit-background-clip: text; background-clip: text; color: transparent; }
         .balance { background: rgba(0,0,0,0.6); border: 1px solid rgba(255,215,0,0.3); padding: 6px 18px; border-radius: 40px; color: #FFD700; font-weight: 700; font-size: 14px; }
         
-        /* Экраны */
         .screen { display: none; padding: 16px; }
         .screen.active { display: block; }
         
-        /* Карточки игр на главной */
+        /* ГЛАВНАЯ */
         .game-card {
             background: linear-gradient(135deg, #0d0d0d 0%, #050505 100%);
             border-radius: 24px;
@@ -44,25 +42,92 @@
             position: relative;
             cursor: pointer;
             border: 1px solid rgba(255,215,0,0.15);
-            transition: 0.1s;
         }
         .game-card:active { transform: scale(0.98); }
         .game-card .title { font-size: 22px; font-weight: 800; }
         .game-card .sub { font-size: 11px; color: #6b6b6b; margin-top: 4px; }
         .game-card .art { position: absolute; right: 16px; bottom: 12px; font-size: 48px; opacity: 0.8; }
         
-        /* Общие виджеты */
-        .widget {
-            background: linear-gradient(135deg, #0a0a0a 0%, #050505 100%);
-            border-radius: 24px;
+        /* РАКЕТА - МИНИМАЛИСТИЧНО */
+        .rocket-display {
+            background: radial-gradient(ellipse at center, #0f0f0f 0%, #050505 100%);
+            border-radius: 20px;
             padding: 20px;
+            text-align: center;
+            border: 1px solid rgba(255,215,0,0.15);
             margin-bottom: 16px;
+        }
+        .rocket-multiplier {
+            font-size: 52px;
+            font-weight: 900;
+            font-family: monospace;
+            letter-spacing: 2px;
+        }
+        .rocket-multiplier.flying { color: #FFD700; text-shadow: 0 0 20px rgba(255,215,0,0.3); }
+        .rocket-multiplier.crashed { color: #ff4444; }
+        .rocket-countdown { font-size: 40px; font-weight: 900; color: #FFD700; }
+        
+        .bet-panel {
+            background: #0a0a0a;
+            border-radius: 20px;
+            padding: 16px;
             border: 1px solid rgba(255,215,0,0.1);
         }
+        .bet-input {
+            background: #0a0a0a;
+            border: 1px solid #FFD700;
+            color: #FFD700;
+            padding: 12px;
+            border-radius: 40px;
+            width: 100%;
+            text-align: center;
+            font-weight: 700;
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+        .preset-row { display: flex; gap: 8px; margin: 12px 0; }
+        .preset {
+            background: rgba(255,215,0,0.1);
+            border: 1px solid rgba(255,215,0,0.2);
+            padding: 8px;
+            border-radius: 30px;
+            flex: 1;
+            text-align: center;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .preset:active { transform: scale(0.96); background: rgba(255,215,0,0.2); }
+        
+        .auto-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #0a0a0a;
+            padding: 10px 14px;
+            border-radius: 40px;
+            margin: 12px 0;
+            border: 1px solid rgba(255,215,0,0.1);
+        }
+        .auto-value {
+            background: #0a0a0a;
+            border: 1px solid #FFD700;
+            color: #FFD700;
+            padding: 6px 10px;
+            border-radius: 30px;
+            width: 70px;
+            text-align: center;
+        }
+        .switch { position: relative; display: inline-block; width: 46px; height: 22px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #2a2a2a; border-radius: 22px; }
+        .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 3px; bottom: 3px; background-color: white; border-radius: 50%; }
+        input:checked + .slider { background-color: #FFD700; }
+        input:checked + .slider:before { transform: translateX(24px); }
+        
         .btn {
             background: linear-gradient(135deg, #FFD700, #DAA520);
             width: 100%;
-            padding: 14px;
+            padding: 12px;
             border: none;
             border-radius: 40px;
             color: #000;
@@ -75,84 +140,20 @@
         .btn-cashout { background: linear-gradient(135deg, #00cc66, #009944); color: #fff; }
         .btn:active { transform: scale(0.98); }
         
-        .preset-row { display: flex; gap: 10px; margin: 12px 0; }
-        .preset {
-            background: rgba(255,215,0,0.1);
-            border: 1px solid rgba(255,215,0,0.2);
-            padding: 10px;
-            border-radius: 40px;
-            flex: 1;
-            text-align: center;
-            font-weight: 600;
-            cursor: pointer;
-        }
-        .preset:active { transform: scale(0.96); background: rgba(255,215,0,0.2); }
+        .history { display: flex; gap: 6px; overflow-x: auto; margin: 12px 0; padding-bottom: 4px; }
+        .history-item { background: #0a0a0a; padding: 4px 12px; border-radius: 30px; font-size: 12px; font-weight: 600; border: 1px solid rgba(255,215,0,0.15); }
         
-        .bet-input {
-            background: #0a0a0a;
-            border: 1px solid #FFD700;
-            color: #FFD700;
-            padding: 14px;
-            border-radius: 40px;
-            width: 100%;
-            text-align: center;
-            font-weight: 700;
-            font-size: 16px;
-            margin-bottom: 10px;
-        }
-        
-        .crash-display {
-            background: radial-gradient(ellipse at center, #1a1a1a 0%, #050505 100%);
-            border-radius: 24px;
-            padding: 30px;
-            text-align: center;
-            border: 1px solid rgba(255,215,0,0.2);
-            margin-bottom: 16px;
-        }
-        .multiplier { font-size: 52px; font-weight: 900; font-family: monospace; }
-        .multiplier.flying { color: #FFD700; text-shadow: 0 0 20px rgba(255,215,0,0.5); }
-        .multiplier.crashed { color: #ff4444; }
-        .countdown-big { font-size: 40px; font-weight: 900; color: #FFD700; }
-        
-        .history { display: flex; gap: 8px; overflow-x: auto; margin-bottom: 16px; }
-        .history-item { background: #0a0a0a; padding: 6px 14px; border-radius: 30px; font-size: 13px; font-weight: 600; border: 1px solid rgba(255,215,0,0.2); }
-        
-        .toggle-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: #0a0a0a;
-            padding: 12px 16px;
-            border-radius: 40px;
-            margin-bottom: 16px;
-            border: 1px solid rgba(255,215,0,0.1);
-        }
-        .auto-value {
-            background: #0a0a0a;
-            border: 1px solid #FFD700;
-            color: #FFD700;
-            padding: 6px 12px;
-            border-radius: 30px;
-            width: 80px;
-            text-align: center;
-        }
-        .switch { position: relative; display: inline-block; width: 50px; height: 24px; }
-        .switch input { opacity: 0; width: 0; height: 0; }
-        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #2a2a2a; transition: 0.2s; border-radius: 24px; }
-        .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: 0.2s; border-radius: 50%; }
-        input:checked + .slider { background-color: #FFD700; }
-        input:checked + .slider:before { transform: translateX(26px); }
-        
-        .bets-list { max-height: 220px; overflow-y: auto; }
+        .bets-list { max-height: 200px; overflow-y: auto; }
         .bet-item {
             background: #0a0a0a;
-            border-radius: 60px;
-            padding: 10px 14px;
+            border-radius: 50px;
+            padding: 8px 12px;
             margin-bottom: 6px;
             display: flex;
             justify-content: space-between;
             align-items: center;
             border: 1px solid rgba(255,215,0,0.1);
+            font-size: 12px;
         }
         .empty { text-align: center; padding: 30px; color: #6b6b6b; }
         
@@ -166,11 +167,11 @@
         .mine-cell {
             aspect-ratio: 1;
             background: linear-gradient(135deg, #0f0f0f, #070707);
-            border-radius: 16px;
+            border-radius: 14px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 28px;
+            font-size: 24px;
             cursor: pointer;
             border: 1px solid rgba(255,215,0,0.15);
         }
@@ -179,7 +180,7 @@
         .mine-cell.revealed-mine { background: linear-gradient(135deg, #ff4444, #cc0000); }
         
         /* РУЛЕТКА */
-        .roulette-wrap { display: flex; justify-content: center; margin: 20px 0; }
+        .roulette-wrap { display: flex; justify-content: center; margin: 16px 0; }
         .roulette-box { position: relative; width: 260px; height: 260px; }
         .roulette-bg {
             position: absolute;
@@ -187,18 +188,17 @@
             height: 100%;
             border-radius: 50%;
             transition: transform 3s cubic-bezier(0.2,0.8,0.3,1);
-            box-shadow: 0 0 30px rgba(255,215,0,0.2);
             border: 2px solid #FFD700;
         }
         .roulette-avatars { position: absolute; width: 100%; height: 100%; }
         .roulette-pointer {
             position: absolute;
-            top: -25px;
+            top: -22px;
             left: 50%;
             transform: translateX(-50%);
-            font-size: 35px;
+            font-size: 30px;
             color: #FFD700;
-            filter: drop-shadow(0 0 5px black);
+            filter: drop-shadow(0 0 3px black);
             z-index: 10;
         }
         
@@ -207,55 +207,55 @@
             display: flex;
             justify-content: center;
             align-items: flex-end;
-            gap: 20px;
+            gap: 15px;
             margin: 20px 0 30px;
-            height: 200px;
+            height: 190px;
         }
-        .podium-item { display: flex; flex-direction: column; align-items: center; width: 100px; }
+        .podium-item { display: flex; flex-direction: column; align-items: center; width: 90px; }
         .podium-1 {
-            height: 140px; width: 85px;
+            height: 130px; width: 80px;
             background: linear-gradient(180deg, #FFD700, #B8860B);
-            border-radius: 20px 20px 12px 12px;
+            border-radius: 16px 16px 10px 10px;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
         }
         .podium-2 {
-            height: 110px; width: 85px;
+            height: 100px; width: 80px;
             background: linear-gradient(180deg, #C0C0C0, #808080);
-            border-radius: 20px 20px 12px 12px;
+            border-radius: 16px 16px 10px 10px;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
         }
         .podium-3 {
-            height: 85px; width: 85px;
+            height: 75px; width: 80px;
             background: linear-gradient(180deg, #CD7F32, #8B4513);
-            border-radius: 20px 20px 12px 12px;
+            border-radius: 16px 16px 10px 10px;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
         }
         .podium-avatar {
-            width: 48px; height: 48px;
+            width: 42px; height: 42px;
             border-radius: 50%;
             background: linear-gradient(135deg, #1a1a1a, #0a0a0a);
             border: 2px solid #FFD700;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 22px;
-            margin-bottom: 6px;
+            font-size: 20px;
+            margin-bottom: 4px;
             overflow: hidden;
         }
         .leader-list { display: flex; flex-direction: column; gap: 6px; }
         .leader-item {
             background: #0a0a0a;
-            border-radius: 20px;
-            padding: 12px 16px;
+            border-radius: 16px;
+            padding: 10px 14px;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -264,27 +264,27 @@
         
         /* ПРОФИЛЬ */
         .profile-avatar {
-            width: 80px; height: 80px;
+            width: 70px; height: 70px;
             border-radius: 50%;
             background: linear-gradient(135deg, #1a1a1a, #0a0a0a);
             border: 2px solid #FFD700;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 36px;
+            font-size: 30px;
             margin: 0 auto 12px;
             overflow: hidden;
         }
         .stats-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 12px;
+            gap: 10px;
             margin: 16px 0;
         }
         .stat-card {
             background: #0a0a0a;
-            border-radius: 20px;
-            padding: 12px;
+            border-radius: 16px;
+            padding: 10px;
             text-align: center;
             border: 1px solid rgba(255,215,0,0.1);
         }
@@ -292,7 +292,7 @@
             display: flex;
             background: #0a0a0a;
             padding: 4px;
-            border-radius: 50px;
+            border-radius: 40px;
             margin-bottom: 16px;
             gap: 4px;
             border: 1px solid rgba(255,215,0,0.1);
@@ -302,20 +302,17 @@
             background: transparent;
             border: none;
             color: #6b6b6b;
-            padding: 10px;
-            font-weight: 700;
-            font-size: 13px;
-            border-radius: 50px;
+            padding: 8px;
+            font-weight: 600;
+            font-size: 12px;
+            border-radius: 40px;
             cursor: pointer;
         }
-        .subtab.active {
-            background: #FFD700;
-            color: #000;
-        }
+        .subtab.active { background: #FFD700; color: #000; }
         .ref-box {
             background: #0a0a0a;
-            border-radius: 20px;
-            padding: 14px;
+            border-radius: 16px;
+            padding: 12px;
             margin-top: 12px;
             border: 1px solid rgba(255,215,0,0.15);
         }
@@ -326,7 +323,7 @@
             bottom: 0;
             left: 0;
             right: 0;
-            height: 70px;
+            height: 65px;
             background: rgba(5,5,5,0.95);
             backdrop-filter: blur(20px);
             display: flex;
@@ -339,13 +336,13 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 4px;
+            gap: 3px;
             color: #4a4a4a;
             cursor: pointer;
         }
         .nav-item.active { color: #FFD700; }
-        .nav-icon { font-size: 22px; }
-        .nav-label { font-size: 10px; font-weight: 600; }
+        .nav-icon { font-size: 20px; }
+        .nav-label { font-size: 9px; font-weight: 600; }
         
         .toast {
             position: fixed;
@@ -354,9 +351,9 @@
             transform: translateX(-50%);
             background: rgba(0,0,0,0.95);
             backdrop-filter: blur(10px);
-            padding: 12px 24px;
+            padding: 10px 20px;
             border-radius: 50px;
-            font-size: 13px;
+            font-size: 12px;
             color: #FFD700;
             border: 1px solid rgba(255,215,0,0.3);
             z-index: 200;
@@ -376,7 +373,7 @@
 <div id="screen-home" class="screen active">
     <div class="game-card" onclick="goTo('crash')">
         <div class="title">Ракета</div>
-        <div class="sub">Краш-игра • Забери выигрыш</div>
+        <div class="sub">Краш-игра</div>
         <div class="art">🚀</div>
     </div>
     <div class="game-card" onclick="goTo('mines')">
@@ -391,25 +388,24 @@
     </div>
 </div>
 
-<!-- РАКЕТА -->
+<!-- РАКЕТА (МИНИМАЛИСТИЧНО) -->
 <div id="screen-crash" class="screen">
-    <div class="crash-display">
-        <div class="multiplier" id="crashMult">1.00x</div>
-        <div id="crashStatusText" class="countdown-big" style="display: none;"></div>
+    <div class="rocket-display">
+        <div class="rocket-multiplier" id="crashMult">1.00x</div>
+        <div id="crashStatusText" class="rocket-countdown" style="display: none;"></div>
     </div>
     <div class="history" id="crashHistory"></div>
-    <div class="widget">
-        <div style="text-align:center; color:#6b6b6b; font-size:11px; margin-bottom:8px;">Сумма ставки</div>
-        <input type="number" id="crashBetInput" class="bet-input" placeholder="Введите сумму" value="10" min="10">
+    <div class="bet-panel">
+        <input type="number" id="crashBetInput" class="bet-input" placeholder="Сумма" value="10" min="10">
         <div class="preset-row">
             <div class="preset" onclick="changeBet('min')">MIN</div>
             <div class="preset" onclick="changeBet('add')">+10</div>
             <div class="preset" onclick="changeBet('max')">MAX</div>
         </div>
-        <div class="toggle-row">
+        <div class="auto-row">
             <span>⚡ Автовывод</span>
-            <div style="display:flex; align-items:center; gap:8px;">
-                <input type="number" id="autoCashoutVal" class="auto-value" value="1.5" step="0.01" min="1.01" max="10">
+            <div style="display:flex; align-items:center; gap:6px;">
+                <input type="number" id="autoCashoutVal" class="auto-value" value="1.5" step="0.05" min="1.05" max="10">
                 <label class="switch">
                     <input type="checkbox" id="autoCashoutToggle">
                     <span class="slider"></span>
@@ -418,18 +414,17 @@
         </div>
         <div class="btn" id="crashBtn" onclick="rocketAction()">💰 Сделать ставку</div>
     </div>
-    <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
-        <span>👥 Участники</span>
-        <span id="crashStatus" style="color:#FFD700;">● Ожидание ставок</span>
+    <div style="display:flex; justify-content:space-between; margin:12px 0 8px;">
+        <span style="color:#6b6b6b;">Участники</span>
+        <span id="crashStatus" style="color:#FFD700;">● Ожидание</span>
     </div>
     <div class="bets-list" id="crashBets"></div>
 </div>
 
-<!-- МИНЫ -->
+<!-- МИНЫ (ИСПРАВЛЕННЫЕ) -->
 <div id="screen-mines" class="screen">
-    <div class="widget">
-        <div style="text-align:center; color:#6b6b6b; font-size:11px; margin-bottom:8px;">Ставка</div>
-        <input type="number" id="minesBetInput" class="bet-input" placeholder="Введите сумму" value="20" min="10">
+    <div class="bet-panel">
+        <input type="number" id="minesBetInput" class="bet-input" placeholder="Ставка" value="20" min="10">
         <div class="preset-row">
             <div class="preset" onclick="minesBetAdj('half')">½</div>
             <div class="preset" onclick="minesBetAdj('double')">×2</div>
@@ -437,7 +432,7 @@
         </div>
         <div style="display:flex; justify-content:space-between; align-items:center; margin:12px 0;">
             <span>💣 Количество мин</span>
-            <select id="minesCountSelect" style="background:#0a0a0a; border:1px solid #FFD700; color:#FFD700; padding:6px 12px; border-radius:20px;">
+            <select id="minesCountSelect" style="background:#0a0a0a; border:1px solid #FFD700; color:#FFD700; padding:6px 10px; border-radius:20px;">
                 <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option>
                 <option value="5" selected>5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option>
                 <option value="9">9</option><option value="10">10</option><option value="12">12</option><option value="14">14</option>
@@ -447,10 +442,12 @@
         <div class="btn" id="minesBtn" onclick="minesClick()">💣 Новая игра</div>
     </div>
     <div class="mines-grid" id="minesBoard"></div>
-    <div style="text-align:center; margin:16px 0;">
+    <div style="text-align:center; margin:12px 0;">
         <span style="color:#6b6b6b;">Множитель: </span>
-        <span id="minesMult" style="font-size:28px; font-weight:800; color:#FFD700;">1.00x</span>
+        <span id="minesMult" style="font-size:24px; font-weight:800; color:#FFD700;">1.00x</span>
     </div>
+    <!-- ТОЛЬКО ОДНА КНОПКА ЗАБРАТЬ -->
+    <div class="btn" id="minesCash" disabled onclick="minesCashout()" style="background:#2a2a2a; color:#666;">💰 Забрать выигрыш</div>
 </div>
 
 <!-- РУЛЕТКА -->
@@ -462,9 +459,8 @@
             <div class="roulette-pointer">▼</div>
         </div>
     </div>
-    <div class="widget">
-        <div style="text-align:center; color:#6b6b6b; font-size:11px; margin-bottom:8px;">Сумма ставки</div>
-        <input type="number" id="rouletteBetInput" class="bet-input" placeholder="Введите сумму" value="10" min="10">
+    <div class="bet-panel">
+        <input type="number" id="rouletteBetInput" class="bet-input" placeholder="Сумма" value="10" min="10">
         <div class="preset-row">
             <div class="preset" onclick="rouletteBetAdj('min')">MIN</div>
             <div class="preset" onclick="rouletteBetAdj('add')">+10</div>
@@ -474,11 +470,11 @@
         <div class="btn btn-cancel" id="rouletteCancelBtn" onclick="cancelRouletteBet()" style="margin-top:8px; display:none;">❌ Отменить ставку</div>
         <div class="btn" id="rouletteSpinBtn" onclick="spinRoulette()" style="margin-top:8px; background:#2a2a2a; color:#666;" disabled>🎲 КРУТИТЬ (нужно 2+ игроков)</div>
     </div>
-    <div style="display:flex; justify-content:space-between; margin-top:12px;">
-        <span>Участники</span>
+    <div style="display:flex; justify-content:space-between; margin:12px 0 8px;">
+        <span style="color:#6b6b6b;">Участники</span>
         <span id="rouletteTotal" style="color:#FFD700;">Общая ставка: 0⭐</span>
     </div>
-    <div class="bets-list" id="rouletteBetsList" style="margin-top:12px;"></div>
+    <div class="bets-list" id="rouletteBetsList"></div>
 </div>
 
 <!-- ЛИДЕРЫ -->
@@ -489,15 +485,15 @@
 
 <!-- ПРОФИЛЬ -->
 <div id="screen-profile" class="screen">
-    <div class="widget" style="text-align:center;">
+    <div class="bet-panel" style="text-align:center;">
         <div class="profile-avatar" id="profileAvatar">👤</div>
-        <div style="font-weight:800; font-size:20px; margin-top:8px;" id="profName">Игрок</div>
-        <div style="font-size:12px; color:#6b6b6b; margin-bottom:16px;" id="profUser">@user</div>
+        <div style="font-weight:800; font-size:18px; margin-top:8px;" id="profName">Игрок</div>
+        <div style="font-size:11px; color:#6b6b6b; margin-bottom:12px;" id="profUser">@user</div>
         <div class="stats-grid">
-            <div class="stat-card"><div style="font-size:11px; color:#6b6b6b;">🎮 Игр</div><div style="font-size:20px; font-weight:800;" id="profGames">0</div></div>
-            <div class="stat-card"><div style="font-size:11px; color:#6b6b6b;">⭐ Оборот</div><div style="font-size:20px; font-weight:800;" id="profTurn">0</div></div>
-            <div class="stat-card"><div style="font-size:11px; color:#6b6b6b;">🏆 Побед</div><div style="font-size:20px; font-weight:800;" id="profWins">0</div></div>
-            <div class="stat-card"><div style="font-size:11px; color:#6b6b6b;">💀 Винрейт</div><div style="font-size:20px; font-weight:800;" id="profWr">0%</div></div>
+            <div class="stat-card"><div style="font-size:10px; color:#6b6b6b;">🎮 Игр</div><div style="font-size:18px; font-weight:800;" id="profGames">0</div></div>
+            <div class="stat-card"><div style="font-size:10px; color:#6b6b6b;">⭐ Оборот</div><div style="font-size:18px; font-weight:800;" id="profTurn">0</div></div>
+            <div class="stat-card"><div style="font-size:10px; color:#6b6b6b;">🏆 Побед</div><div style="font-size:18px; font-weight:800;" id="profWins">0</div></div>
+            <div class="stat-card"><div style="font-size:10px; color:#6b6b6b;">💀 Винрейт</div><div style="font-size:18px; font-weight:800;" id="profWr">0%</div></div>
         </div>
     </div>
     <div class="subtab-bar">
@@ -580,7 +576,7 @@
 
     function getAvatarHtml(av, name) {
         if (av && av.startsWith('http')) return `<img src="${av}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`;
-        else return `<span style="font-size:18px;font-weight:bold;">${name ? name.charAt(0).toUpperCase() : '?'}</span>`;
+        else return `<span style="font-size:16px;font-weight:bold;">${name ? name.charAt(0).toUpperCase() : '?'}</span>`;
     }
 
     function getColorForMultiplier(mult) {
@@ -591,6 +587,7 @@
         return '#00ff66';
     }
 
+    // ========== РАКЕТА ==========
     function updateCrashBet() {
         if (hasActiveBet) { toast("Нельзя менять ставку после её создания"); return; }
         let val = parseInt(document.getElementById('crashBetInput').value);
@@ -698,12 +695,12 @@
     function renderBets() {
         const cont = document.getElementById('crashBets');
         if (!cont) return;
-        if (!betsList.length) { cont.innerHTML = '<div class="empty">💰 Нет ставок</div>'; return; }
-        cont.innerHTML = betsList.slice(-10).map(b => `
+        if (!betsList.length) { cont.innerHTML = '<div class="empty">Нет ставок</div>'; return; }
+        cont.innerHTML = betsList.slice(-8).map(b => `
             <div class="bet-item">
-                <div style="display:flex; align-items:center; gap:8px;">
-                    <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#1a1a1a,#0a0a0a);border:1px solid #FFD700;display:flex;align-items:center;justify-content:center;overflow:hidden;">${getAvatarHtml(b.avatar, b.name)}</div>
-                    <span style="font-weight:500;">${b.name}</span>
+                <div style="display:flex; align-items:center; gap:6px;">
+                    <div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#1a1a1a,#0a0a0a);border:1px solid #FFD700;display:flex;align-items:center;justify-content:center;overflow:hidden;">${getAvatarHtml(b.avatar, b.name)}</div>
+                    <span>${b.name}</span>
                 </div>
                 <span style="color:#FFD700;">⭐ ${b.amount}</span>
                 ${b.cashedAt ? `<span style="color:${getColorForMultiplier(b.cashedAt)};">✅ ${b.cashedAt.toFixed(2)}x</span>` : '<span style="color:#6b6b6b;">⏳</span>'}
@@ -713,8 +710,6 @@
 
     document.getElementById('crashBetInput')?.addEventListener('change', updateCrashBet);
     document.getElementById('autoCashoutToggle')?.addEventListener('change', toggleAutoSetting);
-    document.getElementById('minesBetInput')?.addEventListener('change', function() { if(!minesActive) { let val = parseInt(this.value); if(isNaN(val)) val = 20; minesBet = Math.min(Math.max(val, 10), stars); this.value = minesBet; updateUI(); } });
-    document.getElementById('rouletteBetInput')?.addEventListener('change', function() { if(!rouletteHasBet) { let val = parseInt(this.value); if(isNaN(val)) val = 10; rouletteBet = Math.min(Math.max(val, 10), stars); this.value = rouletteBet; updateUI(); } });
 
     socket.on('rocket_countdown', (s) => {
         const el = document.getElementById('crashStatus');
@@ -731,7 +726,7 @@
             if (multDiv) multDiv.style.display = 'block';
         } else {
             isFlying = false;
-            if (el && !isFlying) el.innerHTML = '● Ожидание ставок';
+            if (el && !isFlying) el.innerHTML = '● Ожидание';
             if (statusDiv) statusDiv.style.display = 'none';
             if (multDiv) multDiv.style.display = 'block';
         }
@@ -741,7 +736,7 @@
     socket.on('rocket_start', () => {
         isFlying = true;
         document.getElementById('crashMult').innerHTML = '1.00x';
-        document.getElementById('crashMult').className = 'multiplier flying';
+        document.getElementById('crashMult').className = 'rocket-multiplier flying';
         updateButtonUI();
     });
 
@@ -765,8 +760,8 @@
         crashHistory.unshift(mult.toFixed(2));
         if (crashHistory.length > 10) crashHistory.pop();
         const hist = document.getElementById('crashHistory');
-        if (hist) hist.innerHTML = crashHistory.map(m => `<div class="history-item" style="background:${getColorForMultiplier(parseFloat(m))}20; color:${getColorForMultiplier(parseFloat(m))};">${m}x</div>`).join('');
-        document.getElementById('crashMult').className = 'multiplier crashed';
+        if (hist) hist.innerHTML = crashHistory.map(m => `<div class="history-item">${m}x</div>`).join('');
+        document.getElementById('crashMult').className = 'rocket-multiplier crashed';
         document.getElementById('crashMult').innerHTML = 'ВЗРЫВ!';
         setTimeout(() => { refreshBalance(); }, 500);
         updateAutoSettingsLock();
@@ -796,12 +791,12 @@
             crashHistory = d.map(item => item.multiplier.toFixed(2));
             if (crashHistory.length > 10) crashHistory = crashHistory.slice(0, 10);
             const hist = document.getElementById('crashHistory');
-            if (hist) hist.innerHTML = crashHistory.map(m => `<div class="history-item" style="background:${getColorForMultiplier(parseFloat(m))}20; color:${getColorForMultiplier(parseFloat(m))};">${m}x</div>`).join('');
+            if (hist) hist.innerHTML = crashHistory.map(m => `<div class="history-item">${m}x</div>`).join('');
         }
     });
     socket.emit('rocket_get_history');
 
-    // ========== МИНЫ ==========
+    // ========== МИНЫ (ИСПРАВЛЕННЫЕ) ==========
     function minesBetAdj(type) {
         if (minesActive) { toast("Нельзя менять ставку во время игры!"); return; }
         if (type === 'half') minesBet = Math.floor(minesBet / 2);
@@ -813,7 +808,13 @@
         updateUI();
     }
 
-    function minesClick() { minesActive ? minesCashout() : startMinesGame(); }
+    function minesClick() { 
+        if (minesActive) {
+            minesCashout();
+        } else {
+            startMinesGame();
+        }
+    }
 
     function startMinesGame() {
         if (minesActive) { toast("Игра уже активна!"); return; }
@@ -821,11 +822,19 @@
         const minesCount = parseInt(document.getElementById('minesCountSelect').value);
         socket.emit('mines_start', { telegram_id: uid, betAmount: minesBet, minesCount: minesCount }, (res) => {
             if (res?.success) {
-                minesActive = true; minesGridActive = true; minesBetAmount = minesBet; minesMinesCount = res.minesCount || minesCount;
-                minesRevealed = 0; minesMult = 1; minesCurrentWinAmount = 0;
+                minesActive = true;
+                minesGridActive = true;
+                minesBetAmount = minesBet;
+                minesMinesCount = res.minesCount || minesCount;
+                minesRevealed = 0;
+                minesMult = 1;
+                minesCurrentWinAmount = 0;
                 document.getElementById('minesMult').innerText = '1.00x';
                 document.getElementById('minesBtn').innerText = "💰 Забрать";
                 document.getElementById('minesBtn').classList.add('btn-cashout');
+                document.getElementById('minesCash').disabled = false;
+                document.getElementById('minesCash').style.background = "linear-gradient(135deg, #00cc66, #009944)";
+                document.getElementById('minesCash').style.color = "#fff";
                 refreshBalance();
                 renderMinesBoard(true);
                 toast(`💣 Игра началась! ${minesMinesCount} мин. Удачи!`);
@@ -843,10 +852,13 @@
             if (res.exploded) {
                 toast('💣 ВЗРЫВ! Вы проиграли ставку.');
                 if (cell) { cell.innerHTML = '💣'; cell.classList.add('revealed-mine', 'revealed'); }
-                minesActive = false; minesGridActive = false;
+                minesActive = false;
+                minesGridActive = false;
                 renderMinesBoard(false);
                 document.getElementById('minesBtn').innerText = "💣 Новая игра";
                 document.getElementById('minesBtn').classList.remove('btn-cashout');
+                document.getElementById('minesCash').disabled = true;
+                document.getElementById('minesCash').style.background = "#2a2a2a";
                 refreshBalance();
                 if (tg) tg.HapticFeedback?.notificationOccurred('error');
                 return;
@@ -861,10 +873,13 @@
                     toast(`🎉 ПОБЕДА! Вы выиграли ${minesCurrentWinAmount} звёзд!`);
                     gameHistory.unshift({ game: 'Мины', amount: minesCurrentWinAmount, time: new Date().toLocaleTimeString() });
                     if (gameHistory.length > 10) gameHistory.pop();
-                    minesActive = false; minesGridActive = false;
+                    minesActive = false;
+                    minesGridActive = false;
                     renderMinesBoard(false);
                     document.getElementById('minesBtn').innerText = "💣 Новая игра";
                     document.getElementById('minesBtn').classList.remove('btn-cashout');
+                    document.getElementById('minesCash').disabled = true;
+                    document.getElementById('minesCash').style.background = "#2a2a2a";
                     refreshBalance();
                     if (tg) tg.HapticFeedback?.notificationOccurred('success');
                 }
@@ -879,10 +894,13 @@
                 toast(`💰 Вы вышли с выигрышем ${res.winAmount} звёзд!`);
                 gameHistory.unshift({ game: 'Мины', amount: res.winAmount, time: new Date().toLocaleTimeString() });
                 if (gameHistory.length > 10) gameHistory.pop();
-                minesActive = false; minesGridActive = false;
+                minesActive = false;
+                minesGridActive = false;
                 renderMinesBoard(false);
                 document.getElementById('minesBtn').innerText = "💣 Новая игра";
                 document.getElementById('minesBtn').classList.remove('btn-cashout');
+                document.getElementById('minesCash').disabled = true;
+                document.getElementById('minesCash').style.background = "#2a2a2a";
                 refreshBalance();
                 if (tg) tg.HapticFeedback?.impactOccurred('light');
             } else toast(res?.error || 'Ошибка');
@@ -903,14 +921,29 @@
         }
     }
 
+    document.getElementById('minesBetInput')?.addEventListener('change', function() {
+        if (!minesActive) {
+            let val = parseInt(this.value);
+            if (isNaN(val)) val = 20;
+            minesBet = Math.min(Math.max(val, 10), stars);
+            this.value = minesBet;
+            updateUI();
+        }
+    });
+
     // ========== РУЛЕТКА ==========
     function updateRouletteWheel() {
         const wheel = document.getElementById('rouletteWheel');
         if (!wheel) return;
         const total = rouletteBets.reduce((s, b) => s + b.amount, 0);
-        if (total === 0) { wheel.style.background = '#1a1a1a'; return; }
-        let colors = ['#FFD700', '#00cc66', '#ff4444', '#ff8800', '#aa66ff', '#ff66cc', '#66ccff', '#88ff88'];
-        let conicString = '', startAngle = 0;
+        if (total === 0) {
+            wheel.style.background = '#1a1a1a';
+            wheel.style.border = '2px solid #FFD700';
+            return;
+        }
+        const colors = ['#FFD700', '#00cc66', '#ff4444', '#ff8800', '#aa66ff', '#ff66cc', '#66ccff', '#88ff88'];
+        let conicString = '';
+        let startAngle = 0;
         rouletteBets.forEach((bet, idx) => {
             const percent = (bet.amount / total) * 360;
             const color = colors[idx % colors.length];
@@ -927,17 +960,23 @@
         container.innerHTML = '';
         const total = rouletteBets.reduce((s, b) => s + b.amount, 0);
         if (total === 0) return;
-        let angle = 0, step = (Math.PI * 2) / rouletteBets.length, radius = 100, cx = 130, cy = 130;
+        const colors = ['#FFD700', '#00cc66', '#ff4444', '#ff8800', '#aa66ff', '#ff66cc', '#66ccff', '#88ff88'];
+        let startAngle = 0;
+        const radius = 98;
+        const cx = 130, cy = 130;
         rouletteBets.forEach((bet, idx) => {
-            const angleRad = angle + (step * idx);
-            const x = cx + radius * Math.cos(angleRad), y = cy + radius * Math.sin(angleRad);
+            const percent = (bet.amount / total) * 360;
+            const midAngle = startAngle + percent / 2;
+            const angleRad = (midAngle * Math.PI) / 180;
+            const x = cx + radius * Math.cos(angleRad);
+            const y = cy + radius * Math.sin(angleRad);
             const avatarHtml = getAvatarHtml(bet.avatar, bet.name);
             const div = document.createElement('div');
             div.style.position = 'absolute';
-            div.style.width = '45px';
-            div.style.height = '45px';
+            div.style.width = '40px';
+            div.style.height = '40px';
             div.style.borderRadius = '50%';
-            div.style.background = 'linear-gradient(135deg, #1a1a1a, #0a0a0a)';
+            div.style.background = `linear-gradient(135deg, ${colors[idx % colors.length]}, ${colors[idx % colors.length]}cc)`;
             div.style.border = '2px solid #FFD700';
             div.style.display = 'flex';
             div.style.alignItems = 'center';
@@ -945,8 +984,10 @@
             div.style.left = x + 'px';
             div.style.top = y + 'px';
             div.style.transform = 'translate(-50%, -50%)';
+            div.style.zIndex = '10';
             div.innerHTML = avatarHtml;
             container.appendChild(div);
+            startAngle += percent;
         });
     }
 
@@ -1047,8 +1088,8 @@
             const avatarHtml = getAvatarHtml(b.avatar, b.name);
             const chance = total ? ((b.amount / total) * 100).toFixed(1) : 0;
             return `<div class="bet-item">
-                <div style="display:flex; align-items:center; gap:8px;">
-                    <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#1a1a1a,#0a0a0a);border:1px solid #FFD700;display:flex;align-items:center;justify-content:center;overflow:hidden;">${avatarHtml}</div>
+                <div style="display:flex; align-items:center; gap:6px;">
+                    <div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#1a1a1a,#0a0a0a);border:1px solid #FFD700;display:flex;align-items:center;justify-content:center;overflow:hidden;">${avatarHtml}</div>
                     <span>${b.name}</span>
                 </div>
                 <span style="color:#FFD700;">⭐ ${b.amount}</span>
@@ -1097,26 +1138,26 @@
             <div class="podium-item">
                 <div class="podium-2">
                     <div class="podium-avatar">${getAvatarHtml(top3[1].avatar, top3[1].name)}</div>
-                    <div style="font-size:11px; font-weight:600; max-width:70px; overflow:hidden; text-overflow:ellipsis;">${top3[1].name}</div>
+                    <div style="font-size:10px; font-weight:600; max-width:65px; overflow:hidden; text-overflow:ellipsis;">${top3[1].name}</div>
                 </div>
-                <div style="font-size:12px; font-weight:600; margin-top:8px; color:#FFD700;">2 место</div>
-                <div style="font-size:10px; color:#6b6b6b;">⭐ ${top3[1].turnover}</div>
+                <div style="font-size:11px; font-weight:600; margin-top:6px; color:#FFD700;">2 место</div>
+                <div style="font-size:9px; color:#6b6b6b;">⭐ ${top3[1].turnover}</div>
             </div>
             <div class="podium-item">
                 <div class="podium-1">
                     <div class="podium-avatar">${getAvatarHtml(top3[0].avatar, top3[0].name)}</div>
-                    <div style="font-size:11px; font-weight:600; max-width:70px; overflow:hidden; text-overflow:ellipsis;">${top3[0].name}</div>
+                    <div style="font-size:10px; font-weight:600; max-width:65px; overflow:hidden; text-overflow:ellipsis;">${top3[0].name}</div>
                 </div>
-                <div style="font-size:12px; font-weight:600; margin-top:8px; color:#FFD700;">1 место</div>
-                <div style="font-size:10px; color:#6b6b6b;">⭐ ${top3[0].turnover}</div>
+                <div style="font-size:11px; font-weight:600; margin-top:6px; color:#FFD700;">1 место</div>
+                <div style="font-size:9px; color:#6b6b6b;">⭐ ${top3[0].turnover}</div>
             </div>
             <div class="podium-item">
                 <div class="podium-3">
                     <div class="podium-avatar">${getAvatarHtml(top3[2].avatar, top3[2].name)}</div>
-                    <div style="font-size:11px; font-weight:600; max-width:70px; overflow:hidden; text-overflow:ellipsis;">${top3[2].name}</div>
+                    <div style="font-size:10px; font-weight:600; max-width:65px; overflow:hidden; text-overflow:ellipsis;">${top3[2].name}</div>
                 </div>
-                <div style="font-size:12px; font-weight:600; margin-top:8px; color:#FFD700;">3 место</div>
-                <div style="font-size:10px; color:#6b6b6b;">⭐ ${top3[2].turnover}</div>
+                <div style="font-size:11px; font-weight:600; margin-top:6px; color:#FFD700;">3 место</div>
+                <div style="font-size:9px; color:#6b6b6b;">⭐ ${top3[2].turnover}</div>
             </div>
         `;
     }
@@ -1132,12 +1173,12 @@
         cont.innerHTML = data.slice(3, 50).map((u, i) => {
             const avatarHtml = getAvatarHtml(u.avatar, u.name);
             return `<div class="leader-item">
-                <div style="display: flex; align-items: center; gap: 12px;">
-                    <span style="font-weight:800; width:35px;">#${i + 4}</span>
-                    <div style="width:36px; height:36px; border-radius:50%; background:linear-gradient(135deg,#1a1a1a,#0a0a0a); border:1px solid #FFD700; display:flex; align-items:center; justify-content:center; overflow:hidden;">${avatarHtml}</div>
-                    <span>${u.name}</span>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span style="font-weight:800; width:30px;">#${i + 4}</span>
+                    <div style="width:30px; height:30px; border-radius:50%; background:linear-gradient(135deg,#1a1a1a,#0a0a0a); border:1px solid #FFD700; display:flex; align-items:center; justify-content:center; overflow:hidden;">${avatarHtml}</div>
+                    <span style="font-size:13px;">${u.name}</span>
                 </div>
-                <span style="color:#FFD700;">⭐ ${u.turnover}</span>
+                <span style="color:#FFD700; font-size:13px;">⭐ ${u.turnover}</span>
             </div>`;
         }).join('');
         if (data.length <= 3) cont.innerHTML = '<div class="empty">Нет других игроков</div>';
@@ -1164,24 +1205,24 @@
         if (tab === 'games') {
             if (gameHistory.length === 0) container.innerHTML = '<div class="empty">🎮 Сыграйте в игры, чтобы увидеть историю</div>';
             else container.innerHTML = gameHistory.map(h => `
-                <div style="background:#0a0a0a; border-radius:20px; padding:14px; margin-bottom:8px; text-align:center; border:1px solid rgba(255,215,0,0.1);">
-                    <div style="font-weight:700;">${h.game}</div>
-                    <div style="font-size:20px; font-weight:800; ${h.amount > 0 ? 'color:#00cc66' : 'color:#ff4444'}">${h.amount > 0 ? '+' : ''}${h.amount}⭐</div>
-                    <div style="font-size:10px; color:#6b6b6b;">${h.time}</div>
+                <div style="background:#0a0a0a; border-radius:16px; padding:12px; margin-bottom:8px; text-align:center; border:1px solid rgba(255,215,0,0.1);">
+                    <div style="font-weight:700; font-size:13px;">${h.game}</div>
+                    <div style="font-size:16px; font-weight:800; ${h.amount > 0 ? 'color:#00cc66' : 'color:#ff4444'}">${h.amount > 0 ? '+' : ''}${h.amount}⭐</div>
+                    <div style="font-size:9px; color:#6b6b6b;">${h.time}</div>
                 </div>
             `).join('');
         } else if (tab === 'refs') {
             const refLink = `https://t.me/DadTonBot?startapp=ref_${uid.slice(-6)}`;
             container.innerHTML = `
-                <div style="display: flex; gap: 12px; margin-bottom: 16px;">
-                    <div class="stat-card" style="flex:1;"><div style="font-size:11px; color:#6b6b6b;">👥 Рефералы</div><div style="font-size:24px; font-weight:800;" id="refCount">${referralCount}</div></div>
-                    <div class="stat-card" style="flex:1;"><div style="font-size:11px; color:#6b6b6b;">💰 Заработано</div><div style="font-size:24px; font-weight:800;" id="refEarned">${referralEarned}</div></div>
+                <div style="display: flex; gap: 10px; margin-bottom: 16px;">
+                    <div class="stat-card" style="flex:1;"><div style="font-size:10px; color:#6b6b6b;">👥 Рефералы</div><div style="font-size:20px; font-weight:800;" id="refCount">${referralCount}</div></div>
+                    <div class="stat-card" style="flex:1;"><div style="font-size:10px; color:#6b6b6b;">💰 Заработано</div><div style="font-size:20px; font-weight:800;" id="refEarned">${referralEarned}</div></div>
                 </div>
                 <div class="ref-box">
-                    <span style="font-size:12px; word-break:break-all;">${refLink}</span>
-                    <div class="btn" style="margin-top:12px; padding:10px;" onclick="navigator.clipboard.writeText('${refLink}'); toast('Ссылка скопирована!')">Копировать ссылку</div>
+                    <span style="font-size:11px; word-break:break-all;">${refLink}</span>
+                    <div class="btn" style="margin-top:10px; padding:8px;" onclick="navigator.clipboard.writeText('${refLink}'); toast('Ссылка скопирована!')">Копировать</div>
                 </div>
-                <div class="empty" style="margin-top:12px;">💡 За каждого приглашённого друга вы получаете 10% от его оборота!</div>
+                <div class="empty" style="margin-top:10px; font-size:11px;">💡 За каждого приглашённого друга вы получаете 10% от его оборота!</div>
             `;
         }
     }
