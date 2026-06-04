@@ -93,13 +93,29 @@ function startRocketFlying() {
     
     if (rocketInterval) clearInterval(rocketInterval);
     
+    let lastTime = Date.now();
+    
     rocketInterval = setInterval(() => {
         if (rocketState.status !== 'flying') {
             clearInterval(rocketInterval);
             return;
         }
         
-        rocketState.currentMultiplier += 0.02;
+        const now = Date.now();
+        const delta = Math.min(100, now - lastTime);
+        lastTime = now;
+        
+        // ПЛАВНАЯ СКОРОСТЬ: до 1.5x медленно, потом быстрее
+        let speed;
+        if (rocketState.currentMultiplier < 1.5) {
+            speed = 0.008; // медленно до 1.5x (около 6 секунд)
+        } else {
+            speed = 0.012 + (rocketState.currentMultiplier - 1.5) * 0.003;
+            speed = Math.min(speed, 0.035);
+        }
+        
+        let adjustedSpeed = speed * (delta / 100);
+        rocketState.currentMultiplier += adjustedSpeed;
         
         if (rocketState.currentMultiplier >= rocketState.crashPoint) {
             clearInterval(rocketInterval);
@@ -114,7 +130,7 @@ function startRocketFlying() {
         } else {
             io.emit('rocket_multiplier', rocketState.currentMultiplier);
         }
-    }, 100);
+    }, 50);
 }
 
 let minesState = new Map();
@@ -500,5 +516,14 @@ startRocketCountdown();
 
 const PORT = process.env.PORT || 10000;
 server.listen(PORT, () => {
-    console.log(`🚀 Сервер запущен на порту ${PORT}`);
+    console.log(`
+    ╔══════════════════════════════════════╗
+    ║   🚀 DADTON СЕРВЕР ЗАПУЩЕН          ║
+    ║   http://localhost:${PORT}              ║
+    ║                                      ║
+    ║   ⚡ СКОРОСТЬ РАКЕТЫ:                ║
+    ║   - до 1.5x: очень медленно (0.008) ║
+    ║   - после 1.5x: плавное ускорение   ║
+    ╚══════════════════════════════════════╝
+    `);
 });
