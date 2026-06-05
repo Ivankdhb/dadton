@@ -174,16 +174,28 @@ io.on('connection', (socket) => {
     console.log('👤 Игрок подключился');
     
     socket.on('register', (data, callback) => {
-        const telegram_id = data.telegram_id || 'player_' + Math.floor(Math.random() * 1000000);
+        const telegram_id = data.telegram_id;
         const name = data.name || 'Игрок';
         const avatar = data.avatar || '👤';
         const referrerId = data.referrer_id || null;
         
+        if (!telegram_id) {
+            if (callback) callback({ success: false, error: 'No telegram_id' });
+            return;
+        }
+        
         db.get(`SELECT * FROM users WHERE telegram_id = ?`, [telegram_id], (err, row) => {
+            if (err) {
+                console.error('DB error:', err);
+                if (callback) callback({ success: false, error: 'Database error' });
+                return;
+            }
+            
             if (!row) {
                 db.run(`INSERT INTO users (telegram_id, name, avatar, stars, referrer_id) VALUES (?, ?, ?, 1000, ?)`, 
                     [telegram_id, name, avatar, referrerId], function(err) {
                     if (err) {
+                        console.error('Insert error:', err);
                         if (callback) callback({ success: false, error: err.message });
                     } else {
                         if (referrerId) {
@@ -199,7 +211,17 @@ io.on('connection', (socket) => {
     });
     
     socket.on('get_balance', (telegram_id, callback) => {
+        if (!telegram_id) {
+            if (callback) callback({ stars: 1000 });
+            return;
+        }
+        
         db.get(`SELECT stars, name, avatar, turnover, games_played, wins FROM users WHERE telegram_id = ?`, [telegram_id], (err, row) => {
+            if (err) {
+                console.error('Get balance error:', err);
+                if (callback) callback({ stars: 1000 });
+                return;
+            }
             if (row) {
                 if (callback) callback({ stars: row.stars, name: row.name, avatar: row.avatar || '👤', turnover: row.turnover || 0, games_played: row.games_played || 0, wins: row.wins || 0 });
             } else {
@@ -209,13 +231,28 @@ io.on('connection', (socket) => {
     });
     
     socket.on('get_referral_stats', (telegram_id, callback) => {
+        if (!telegram_id) {
+            if (callback) callback({ count: 0, earned: 0 });
+            return;
+        }
+        
         db.get(`SELECT COUNT(*) as count, SUM(turnover) as total FROM users WHERE referrer_id = ?`, [telegram_id], (err, row) => {
+            if (err) {
+                console.error('Referral stats error:', err);
+                if (callback) callback({ count: 0, earned: 0 });
+                return;
+            }
             if (callback) callback({ count: row?.count || 0, earned: Math.floor((row?.total || 0) * 0.1) });
         });
     });
     
     // ===== РАКЕТА =====
     socket.on('rocket_place_bet', (data, callback) => {
+        if (!data || !data.telegram_id) {
+            if (callback) callback({ success: false, error: 'Invalid data' });
+            return;
+        }
+        
         if (rocketState.status !== 'waiting') {
             if (callback) callback({ success: false, error: 'Ставки только до взлёта!' });
             return;
@@ -234,24 +271,41 @@ io.on('connection', (socket) => {
         }
         
         db.get(`SELECT stars FROM users WHERE telegram_id = ?`, [telegram_id], (err, row) => {
+            if (err) {
+                console.error('Rocket place bet error:', err);
+                if (callback) callback({ success: false, error: 'Database error' });
+                return;
+            }
+            
             if (!row || row.stars < amount) {
                 if (callback) callback({ success: false, error: `Недостаточно звёзд!` });
                 return;
             }
             
-            db.run(`UPDATE users SET stars = stars - ?, games_played = games_played + 1 WHERE telegram_id = ?`, [amount, telegram_id]);
-            
-            rocketState.bets.push({
-                telegram_id, name, amount, autoCashout: parseFloat(autoCashout),
-                cashedAt: null, winAmount: null, avatar: avatar || '👤'
+            db.run(`UPDATE users SET stars = stars - ?, games_played = games_played + 1 WHERE telegram_id = ?`, [amount, telegram_id], (err) => {
+                if (err) {
+                    console.error('Rocket update error:', err);
+                    if (callback) callback({ success: false, error: 'Update failed' });
+                    return;
+                }
+                
+                rocketState.bets.push({
+                    telegram_id, name, amount, autoCashout: parseFloat(autoCashout) || 0,
+                    cashedAt: null, winAmount: null, avatar: avatar || '👤'
+                });
+                
+                io.emit('rocket_bet_placed', { name, amount, autoCashout, avatar: avatar || '👤' });
+                if (callback) callback({ success: true });
             });
-            
-            io.emit('rocket_bet_placed', { name, amount, autoCashout, avatar: avatar || '👤' });
-            if (callback) callback({ success: true });
         });
     });
     
     socket.on('rocket_cancel_bet', (data, callback) => {
+        if (!data || !data.telegram_id) {
+            if (callback) callback({ success: false, error: 'Invalid data' });
+            return;
+        }
+        
         const { telegram_id } = data;
         
         const betIndex = rocketState.bets.findIndex(b => b.telegram_id === telegram_id && !b.cashedAt);
@@ -263,16 +317,25 @@ io.on('connection', (socket) => {
         
         const bet = rocketState.bets[betIndex];
         
-        db.run(`UPDATE users SET stars = stars + ?, games_played = games_played - 1 WHERE telegram_id = ?`, [bet.amount, telegram_id]);
-        
-        rocketState.bets.splice(betIndex, 1);
-        
-        io.emit('rocket_bet_cancelled', { telegram_id, name: bet.name });
-        
-        if (callback) callback({ success: true, amount: bet.amount });
+        db.run(`UPDATE users SET stars = stars + ?, games_played = games_played - 1 WHERE telegram_id = ?`, [bet.amount, telegram_id], (err) => {
+            if (err) {
+                console.error('Cancel bet error:', err);
+                if (callback) callback({ success: false, error: 'Update failed' });
+                return;
+            }
+            
+            rocketState.bets.splice(betIndex, 1);
+            io.emit('rocket_bet_cancelled', { telegram_id, name: bet.name });
+            if (callback) callback({ success: true, amount: bet.amount });
+        });
     });
     
     socket.on('rocket_cashout', (data, callback) => {
+        if (!data || !data.telegram_id) {
+            if (callback) callback({ success: false, error: 'Invalid data' });
+            return;
+        }
+        
         if (rocketState.status !== 'flying') {
             if (callback) callback({ success: false, error: 'Сейчас нельзя забрать' });
             return;
@@ -296,7 +359,9 @@ io.on('connection', (socket) => {
         bet.winAmount = winAmount;
         
         db.run(`UPDATE users SET stars = stars + ?, turnover = turnover + ?, wins = wins + 1 WHERE telegram_id = ?`, 
-            [winAmount, winAmount, telegram_id]);
+            [winAmount, winAmount, telegram_id], (err) => {
+            if (err) console.error('Cashout update error:', err);
+        });
         
         db.get(`SELECT referrer_id FROM users WHERE telegram_id = ?`, [telegram_id], (err, row) => {
             if (row && row.referrer_id) {
@@ -316,8 +381,13 @@ io.on('connection', (socket) => {
         });
     });
     
-    // ===== МИНЫ =====
+    // ===== МИНЫ (ИСПРАВЛЕНЫ) =====
     socket.on('mines_start', (data, callback) => {
+        if (!data || !data.telegram_id) {
+            if (callback) callback({ success: false, error: 'Invalid data' });
+            return;
+        }
+        
         const { telegram_id, betAmount, minesCount } = data;
         
         console.log(`💣 Мины старт: ${telegram_id}, ставка ${betAmount}, мин ${minesCount}`);
@@ -338,6 +408,12 @@ io.on('connection', (socket) => {
         }
         
         db.get(`SELECT stars FROM users WHERE telegram_id = ?`, [telegram_id], (err, row) => {
+            if (err) {
+                console.error('Mines start error:', err);
+                if (callback) callback({ success: false, error: 'Database error' });
+                return;
+            }
+            
             if (!row || row.stars < betAmount) {
                 if (callback) callback({ success: false, error: `Недостаточно звёзд! Нужно ${betAmount}, есть ${row?.stars || 0}` });
                 return;
@@ -345,8 +421,8 @@ io.on('connection', (socket) => {
             
             db.run(`UPDATE users SET stars = stars - ?, games_played = games_played + 1 WHERE telegram_id = ?`, [betAmount, telegram_id], (err) => {
                 if (err) {
-                    console.error('Ошибка обновления:', err);
-                    if (callback) callback({ success: false, error: 'Ошибка базы данных' });
+                    console.error('Mines update error:', err);
+                    if (callback) callback({ success: false, error: 'Ошибка обновления баланса' });
                     return;
                 }
                 
@@ -365,7 +441,7 @@ io.on('connection', (socket) => {
                     active: true
                 });
                 
-                console.log(`✅ Мины: игра создана, мин на поле: ${minesCount}`);
+                console.log(`✅ Мины: игра создана для ${telegram_id}, мин: ${minesCount}`);
                 
                 if (callback) callback({ success: true, minesCount: minesCount });
             });
@@ -373,6 +449,11 @@ io.on('connection', (socket) => {
     });
     
     socket.on('mines_reveal', (data, callback) => {
+        if (!data || !data.telegram_id) {
+            if (callback) callback({ success: false, error: 'Invalid data' });
+            return;
+        }
+        
         const { telegram_id, cellIndex } = data;
         const game = minesState.get(telegram_id);
         
@@ -422,6 +503,11 @@ io.on('connection', (socket) => {
     });
     
     socket.on('mines_cashout', (data, callback) => {
+        if (!data || !data.telegram_id) {
+            if (callback) callback({ success: false, error: 'Invalid data' });
+            return;
+        }
+        
         const { telegram_id } = data;
         const game = minesState.get(telegram_id);
         
@@ -455,8 +541,13 @@ io.on('connection', (socket) => {
         if (callback) callback({ success: true, winAmount });
     });
     
-    // ===== РУЛЕТКА =====
+    // ===== РУЛЕТКА (ИСПРАВЛЕНА) =====
     socket.on('roulette_place_bet', (data, callback) => {
+        if (!data || !data.telegram_id) {
+            if (callback) callback({ success: false, error: 'Invalid data' });
+            return;
+        }
+        
         if (rouletteIsSpinning) {
             if (callback) callback({ success: false, error: 'Рулетка крутится!' });
             return;
@@ -482,6 +573,12 @@ io.on('connection', (socket) => {
         }
         
         db.get(`SELECT stars FROM users WHERE telegram_id = ?`, [telegram_id], (err, row) => {
+            if (err) {
+                console.error('Roulette place bet error:', err);
+                if (callback) callback({ success: false, error: 'Database error' });
+                return;
+            }
+            
             if (!row || row.stars < amount) {
                 if (callback) callback({ success: false, error: `Недостаточно звёзд! Нужно ${amount}, есть ${row?.stars || 0}` });
                 return;
@@ -489,13 +586,13 @@ io.on('connection', (socket) => {
             
             db.run(`UPDATE users SET stars = stars - ?, games_played = games_played + 1 WHERE telegram_id = ?`, [amount, telegram_id], (err) => {
                 if (err) {
-                    console.error('Ошибка обновления:', err);
-                    if (callback) callback({ success: false, error: 'Ошибка базы данных' });
+                    console.error('Roulette update error:', err);
+                    if (callback) callback({ success: false, error: 'Ошибка обновления баланса' });
                     return;
                 }
                 
                 rouletteBets.push({ telegram_id, name, amount, avatar: avatar || '👤' });
-                io.emit('roulette_update', rouletteBets);
+                io.emit('roulette_update', [...rouletteBets]);
                 console.log(`✅ Рулетка: теперь ${rouletteBets.length} участников, общая ставка: ${rouletteBets.reduce((s,b)=>s+b.amount,0)}⭐`);
                 if (callback) callback({ success: true });
             });
@@ -503,6 +600,11 @@ io.on('connection', (socket) => {
     });
     
     socket.on('roulette_cancel_bet', (data, callback) => {
+        if (!data || !data.telegram_id) {
+            if (callback) callback({ success: false, error: 'Invalid data' });
+            return;
+        }
+        
         const { telegram_id, name } = data;
         const betIndex = rouletteBets.findIndex(b => b.telegram_id === telegram_id);
         
@@ -512,7 +614,7 @@ io.on('connection', (socket) => {
             const bet = rouletteBets[betIndex];
             db.run(`UPDATE users SET stars = stars + ? WHERE telegram_id = ?`, [bet.amount, telegram_id]);
             rouletteBets.splice(betIndex, 1);
-            io.emit('roulette_update', rouletteBets);
+            io.emit('roulette_update', [...rouletteBets]);
             if (callback) callback({ success: true, amount: bet.amount });
         } else {
             if (callback) callback({ success: false, error: 'Ставка не найдена' });
@@ -538,6 +640,7 @@ io.on('connection', (socket) => {
         setTimeout(() => {
             const winner = calculateRouletteWinner();
             const total = rouletteBets.reduce((s, b) => s + b.amount, 0);
+            const participants = [...rouletteBets];
             
             console.log(`🏆 Рулетка результат: победитель ${winner?.name}, банк ${total}⭐`);
             
@@ -546,7 +649,7 @@ io.on('connection', (socket) => {
                 db.run(`UPDATE users SET stars = stars + ?, turnover = turnover + ?, wins = wins + 1 WHERE telegram_id = ?`, 
                     [winAmount, winAmount, winner.telegram_id]);
                 
-                for (let participant of rouletteBets) {
+                for (let participant of participants) {
                     if (participant.telegram_id !== winner.telegram_id) {
                         db.get(`SELECT referrer_id FROM users WHERE telegram_id = ?`, [participant.telegram_id], (err, row) => {
                             if (row && row.referrer_id) {
@@ -572,7 +675,7 @@ io.on('connection', (socket) => {
     });
     
     socket.on('roulette_get_bets', (callback) => {
-        if (callback) callback(rouletteBets);
+        if (callback) callback([...rouletteBets]);
     });
     
     socket.on('get_leaderboard', () => {
@@ -583,11 +686,8 @@ io.on('connection', (socket) => {
     
     socket.on('disconnect', () => {
         console.log('👋 Игрок отключился');
-        rouletteBets = rouletteBets.filter(b => b.telegram_id !== socket.telegram_id);
-        if (rocketState.status === 'waiting') {
-            rocketState.bets = rocketState.bets.filter(b => b.telegram_id !== socket.telegram_id);
-        }
-        minesState.delete(socket.telegram_id);
+        // Не очищаем глобальные массивы при отключении одного игрока,
+        // чтобы не сломать игру для других
     });
 });
 
@@ -603,6 +703,9 @@ server.listen(PORT, () => {
     ║   ⚡ РАКЕТА: работает               ║
     ║   💣 МИНЫ: ИСПРАВЛЕНЫ               ║
     ║   🎡 РУЛЕТКА: ИСПРАВЛЕНА            ║
+    ║                                      ║
+    ║   МИН СТАВКА: ${MIN_BET}                   ║
+    ║   МАКС СТАВКА: ${MAX_BET}                 ║
     ╚══════════════════════════════════════╝
     `);
 });
