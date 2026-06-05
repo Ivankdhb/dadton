@@ -1,7 +1,7 @@
 {
   "name": "dadton",
   "version": "1.0.0",
-  "description": "DadTon Game Bot",
+  "description": "DadTon Game Bot with Ton Connect",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
