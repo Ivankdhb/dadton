@@ -6,6 +6,7 @@
     <title>DadTon - Премиум</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="/socket.io/socket.io.js"></script>
+    <script src="https://unpkg.com/@tonconnect/sdk@latest/dist/tonconnect-sdk.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; }
@@ -462,7 +463,6 @@
             white-space: nowrap;
         }
         
-        /* Модальное окно пополнения */
         .modal {
             display: none;
             position: fixed;
@@ -480,34 +480,20 @@
             border-radius: 24px;
             padding: 24px;
             width: 90%;
-            max-width: 400px;
+            max-width: 320px;
             border: 1px solid #FFD700;
-        }
-        .asset-selector {
-            display: flex;
-            gap: 12px;
-            margin-bottom: 20px;
         }
         .asset-btn {
             flex: 1;
             text-align: center;
-            padding: 12px;
+            padding: 10px;
             background: rgba(255,215,0,0.1);
-            border: 1px solid rgba(255,215,0,0.2);
-            border-radius: 16px;
+            border-radius: 12px;
             cursor: pointer;
+            transition: all 0.2s;
         }
         .asset-btn.active {
             background: rgba(255,215,0,0.3);
-            border-color: #FFD700;
-        }
-        .preview-info {
-            background: #0a0a0a;
-            border-radius: 16px;
-            padding: 12px;
-            margin-bottom: 16px;
-            text-align: center;
-            border: 1px solid rgba(255,215,0,0.2);
         }
     </style>
 </head>
@@ -643,7 +629,7 @@
             <div class="stat-card"><div style="font-size:10px; color:#6b6b6b;">🏆 Побед</div><div style="font-size:18px; font-weight:800;" id="profWins">0</div></div>
             <div class="stat-card"><div style="font-size:10px; color:#6b6b6b;">💀 Винрейт</div><div style="font-size:18px; font-weight:800;" id="profWr">0%</div></div>
         </div>
-        <div class="btn" onclick="showDepositModal()" style="background: linear-gradient(135deg, #FFD700, #FFA500); margin-top: 16px;">💎 ПОПОЛНИТЬ ЗВЁЗДЫ</div>
+        <div class="btn" onclick="showDepositModal()" style="background: linear-gradient(135deg, #FFD700, #FFA500); margin-top: 16px;">💎 ПОПОЛНИТЬ</div>
     </div>
     <div class="subtab-bar">
         <button class="subtab" onclick="switchSubtab('games', this)">Мои игры</button>
@@ -663,48 +649,25 @@
 <!-- Модальное окно пополнения -->
 <div id="depositModal" class="modal">
     <div class="modal-content">
-        <h3 style="color:#FFD700; margin-bottom:16px; text-align:center;">💎 Пополнение звёзд</h3>
+        <h3 style="color:#FFD700; margin-bottom:16px; text-align:center;">💎 Пополнение</h3>
         
-        <div class="asset-selector">
-            <div class="asset-btn" data-asset="TON" onclick="selectAsset('TON')">
-                💎 TON<br><small>100⭐/1 TON</small>
-            </div>
-            <div class="asset-btn" data-asset="USDT" onclick="selectAsset('USDT')">
-                💵 USDT<br><small>50⭐/1 USDT</small>
-            </div>
+        <div style="display:flex; gap:10px; margin-bottom:20px;">
+            <div id="tonBtn" class="asset-btn active" onclick="selectAsset('TON')">💎 TON<br><span style="font-size:10px;">1 TON = 100⭐</span></div>
+            <div id="usdtBtn" class="asset-btn" onclick="selectAsset('USDT')">💵 USDT<br><span style="font-size:10px;">1 USDT = 50⭐</span></div>
         </div>
         
-        <div id="tonInput">
-            <div style="display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap;">
-                <div class="preset" onclick="setCryptoAmount(0.5)">0.5 TON (50⭐)</div>
-                <div class="preset" onclick="setCryptoAmount(1)">1 TON (100⭐)</div>
-                <div class="preset" onclick="setCryptoAmount(5)">5 TON (500⭐)</div>
-                <div class="preset" onclick="setCryptoAmount(10)">10 TON (1000⭐)</div>
-            </div>
-            <input type="number" id="cryptoAmount" placeholder="Сумма в TON" step="0.1" min="0.5" class="bet-input" style="margin-bottom:12px;">
+        <input type="number" id="depositAmount" class="bet-input" placeholder="Сумма" style="margin-bottom:12px;">
+        
+        <div style="background:#0a0a0a; border-radius:12px; padding:10px; margin-bottom:16px; text-align:center;">
+            <span style="color:#6b6b6b;">Получишь:</span>
+            <span id="previewStars" style="color:#FFD700; font-size:18px; font-weight:800;">0 ⭐</span>
         </div>
         
-        <div id="usdtInput" style="display:none;">
-            <div style="display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap;">
-                <div class="preset" onclick="setCryptoAmount(1)">1 USDT (50⭐)</div>
-                <div class="preset" onclick="setCryptoAmount(5)">5 USDT (250⭐)</div>
-                <div class="preset" onclick="setCryptoAmount(10)">10 USDT (500⭐)</div>
-                <div class="preset" onclick="setCryptoAmount(50)">50 USDT (2500⭐)</div>
-            </div>
-            <input type="number" id="cryptoAmountUsdt" placeholder="Сумма в USDT" step="1" min="1" class="bet-input" style="margin-bottom:12px;">
-        </div>
+        <div id="connectWalletBtn" class="btn" onclick="connectWallet()">🔗 Подключить кошелёк</div>
+        <div id="payBtn" class="btn" style="display:none; margin-top:8px;" onclick="sendPayment()">💸 Отправить оплату</div>
+        <div class="btn btn-cancel" onclick="closeDepositModal()" style="margin-top:8px;">Отмена</div>
         
-        <div class="preview-info">
-            <span style="color:#6b6b6b;">Вы получите:</span>
-            <span id="previewStars" style="color:#FFD700; font-size:20px; font-weight:800; margin-left:8px;">0 ⭐</span>
-        </div>
-        
-        <div class="btn" onclick="submitDeposit()" style="margin-bottom:8px;">💎 Создать счёт</div>
-        <div class="btn btn-cancel" onclick="closeDepositModal()">Отмена</div>
-        
-        <div style="margin-top:12px; font-size:10px; color:#6b6b6b; text-align:center;">
-            💡 Деньги поступают на кошелёк администратора,<br>вы получаете звёзды автоматически
-        </div>
+        <div id="walletStatus" style="margin-top:12px; font-size:11px; color:#6b6b6b; text-align:center;"></div>
     </div>
 </div>
 
@@ -734,7 +697,10 @@
     let rouletteBet = 10, rouletteBets = [], rouletteSpinning = false, rouletteHasBet = false;
     let rouletteTimer = null;
     
+    // Ton Connect
+    let tonConnector = null;
     let selectedAsset = 'TON';
+    let userWalletAddress = null;
 
     // ==================== ОСНОВНЫЕ ФУНКЦИИ ====================
     
@@ -785,7 +751,6 @@
     });
 
     socket.on('connect', () => {
-        console.log('✅ Соединение установлено');
         refreshBalance();
         socket.emit('get_leaderboard');
     });
@@ -795,105 +760,135 @@
         else return `<span style="font-size:16px;font-weight:bold;">${name ? name.charAt(0).toUpperCase() : '?'}</span>`;
     }
 
-    // ==================== ПОПОЛНЕНИЕ ====================
+    // ==================== ПОПОЛНЕНИЕ TON CONNECT ====================
+    
+    function initTonConnect() {
+        if (tonConnector) return;
+        tonConnector = new TonConnectSDK({
+            manifestUrl: 'https://dadton.onrender.com/tonconnect-manifest.json'
+        });
+        
+        tonConnector.onStatusChange((wallet) => {
+            if (wallet) {
+                userWalletAddress = wallet.account.address;
+                document.getElementById('walletStatus').innerHTML = `✅ Кошелёк подключён: ${userWalletAddress.slice(0,6)}...${userWalletAddress.slice(-4)}`;
+                document.getElementById('connectWalletBtn').style.display = 'none';
+                document.getElementById('payBtn').style.display = 'block';
+            } else {
+                userWalletAddress = null;
+                document.getElementById('walletStatus').innerHTML = '';
+                document.getElementById('connectWalletBtn').style.display = 'block';
+                document.getElementById('payBtn').style.display = 'none';
+            }
+        });
+    }
+    
+    async function connectWallet() {
+        if (!tonConnector) initTonConnect();
+        
+        try {
+            const wallets = await tonConnector.getWallets();
+            const tonkeeper = wallets.find(w => w.name === 'Tonkeeper');
+            
+            if (tonkeeper) {
+                await tonConnector.connect({ bridgeUrl: tonkeeper.bridgeUrl, universalLink: tonkeeper.universalLink });
+            } else {
+                await tonConnector.connect();
+            }
+        } catch (e) {
+            console.error(e);
+            toast('Ошибка подключения кошелька');
+        }
+    }
     
     function selectAsset(asset) {
         selectedAsset = asset;
-        document.querySelectorAll('.asset-btn').forEach(btn => {
-            btn.classList.remove('active');
-            if (btn.getAttribute('data-asset') === asset) btn.classList.add('active');
-        });
-        
-        document.getElementById('tonInput').style.display = asset === 'TON' ? 'block' : 'none';
-        document.getElementById('usdtInput').style.display = asset === 'USDT' ? 'block' : 'none';
-        updatePreview();
-    }
-    
-    function setCryptoAmount(amount) {
-        if (selectedAsset === 'TON') {
-            document.getElementById('cryptoAmount').value = amount;
-        } else {
-            document.getElementById('cryptoAmountUsdt').value = amount;
-        }
+        document.getElementById('tonBtn').style.background = asset === 'TON' ? 'rgba(255,215,0,0.3)' : 'rgba(255,215,0,0.1)';
+        document.getElementById('usdtBtn').style.background = asset === 'USDT' ? 'rgba(255,215,0,0.3)' : 'rgba(255,215,0,0.1)';
         updatePreview();
     }
     
     function updatePreview() {
-        let cryptoAmount = 0;
-        let starsAmount = 0;
-        
-        if (selectedAsset === 'TON') {
-            cryptoAmount = parseFloat(document.getElementById('cryptoAmount').value) || 0;
-            starsAmount = cryptoAmount * 100;
-        } else {
-            cryptoAmount = parseFloat(document.getElementById('cryptoAmountUsdt').value) || 0;
-            starsAmount = cryptoAmount * 50;
-        }
-        
+        let amount = parseFloat(document.getElementById('depositAmount').value) || 0;
+        let starsAmount = selectedAsset === 'TON' ? amount * 100 : amount * 50;
         document.getElementById('previewStars').innerText = Math.floor(starsAmount) + ' ⭐';
     }
+    
+    document.getElementById('depositAmount')?.addEventListener('input', updatePreview);
     
     function showDepositModal() {
         document.getElementById('depositModal').style.display = 'flex';
         selectAsset('TON');
         updatePreview();
+        if (!tonConnector) initTonConnect();
     }
     
     function closeDepositModal() {
         document.getElementById('depositModal').style.display = 'none';
     }
     
-    function submitDeposit() {
-        let cryptoAmount = 0;
+    const ADMIN_WALLET = 'UQCEA1RKJ0eAZ_kvpN7tzhrCIh94XBw9ROSeQbaHPXOEOPRP';
+    
+    async function sendPayment() {
+        let amount = parseFloat(document.getElementById('depositAmount').value);
         
-        if (selectedAsset === 'TON') {
-            cryptoAmount = parseFloat(document.getElementById('cryptoAmount').value);
-            if (!cryptoAmount || cryptoAmount < 0.5) {
-                toast('Минимум 0.5 TON');
-                return;
-            }
-            if (cryptoAmount > 1000) {
-                toast('Максимум 1000 TON');
-                return;
-            }
-        } else {
-            cryptoAmount = parseFloat(document.getElementById('cryptoAmountUsdt').value);
-            if (!cryptoAmount || cryptoAmount < 1) {
-                toast('Минимум 1 USDT');
-                return;
-            }
-            if (cryptoAmount > 10000) {
-                toast('Максимум 10000 USDT');
-                return;
-            }
+        if (!amount || amount <= 0) {
+            toast('Введите сумму');
+            return;
         }
         
-        toast('Создание счёта...');
+        if (selectedAsset === 'TON' && amount < 0.5) {
+            toast('Минимум 0.5 TON');
+            return;
+        }
+        if (selectedAsset === 'USDT' && amount < 1) {
+            toast('Минимум 1 USDT');
+            return;
+        }
         
-        fetch('/api/deposit', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                telegram_id: uid, 
-                asset: selectedAsset, 
-                cryptoAmount: cryptoAmount 
-            })
-        }).then(res => res.json()).then(data => {
-            if (data.success) {
-                toast(`✅ Счёт создан! Оплатите ${data.cryptoAmount} ${data.asset}, получите ${data.starsAmount}⭐`);
-                window.open(data.payUrl, '_blank');
+        if (!userWalletAddress) {
+            toast('Сначала подключите кошелёк');
+            return;
+        }
+        
+        const starsAmount = selectedAsset === 'TON' ? amount * 100 : amount * 50;
+        const nanoAmount = Math.floor(amount * 1e9);
+        
+        const transaction = {
+            validUntil: Math.floor(Date.now() / 1000) + 600,
+            messages: [{
+                address: ADMIN_WALLET,
+                amount: nanoAmount.toString(),
+                payload: `deposit_${uid}_${starsAmount}`
+            }]
+        };
+        
+        try {
+            toast('Подтвердите транзакцию в кошельке...');
+            const result = await tonConnector.sendTransaction(transaction);
+            
+            if (result) {
+                toast(`✅ Транзакция отправлена! После подтверждения получите ${Math.floor(starsAmount)}⭐`);
+                
+                fetch('/api/check-payment', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        telegram_id: uid,
+                        tx_hash: result.hash || Date.now().toString(),
+                        asset: selectedAsset,
+                        amount: amount
+                    })
+                });
+                
                 closeDepositModal();
-            } else {
-                toast(data.error || 'Ошибка создания счёта');
+                setTimeout(() => refreshBalance(), 5000);
             }
-        }).catch(err => {
-            toast('Ошибка сервера');
-            console.error(err);
-        });
+        } catch (e) {
+            console.error(e);
+            toast('Ошибка при отправке');
+        }
     }
-    
-    document.getElementById('cryptoAmount')?.addEventListener('input', updatePreview);
-    document.getElementById('cryptoAmountUsdt')?.addEventListener('input', updatePreview);
 
     // ==================== РАКЕТА ====================
     
