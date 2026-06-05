@@ -1,7 +1,7 @@
 {
   "name": "dadton",
   "version": "1.0.0",
-  "description": "DadTon Game Bot with Ton Connect",
+  "description": "DadTon Game Bot",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
@@ -9,6 +9,9 @@
   "dependencies": {
     "express": "^4.18.2",
     "socket.io": "^4.6.1",
-    "sqlite3": "^5.1.6"
+    "sqlite3": "^5.1.6",
+    "@ton/ton": "^13.0.0",
+    "@ton/core": "^0.49.0",
+    "axios": "^1.6.0"
   }
 }
