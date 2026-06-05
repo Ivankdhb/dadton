@@ -6,7 +6,6 @@
     <title>DadTon - Премиум</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="/socket.io/socket.io.js"></script>
-    <!-- Ton Connect SDK - фиксированная версия -->
     <script src="https://cdn.jsdelivr.net/npm/@tonconnect/sdk@2.0.3/dist/tonconnect-sdk.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
@@ -200,29 +199,23 @@
 
 <div id="toast" class="toast"></div>
 
-<!-- Модальное окно пополнения -->
 <div id="depositModal" class="modal">
     <div class="modal-content">
-        <h3 style="color:#FFD700; margin-bottom:16px; text-align:center;">💎 Пополнение через TON Connect</h3>
-        
+        <h3 style="color:#FFD700; margin-bottom:16px; text-align:center;">💎 Пополнение</h3>
         <div style="display:flex; gap:10px; margin-bottom:20px;">
             <div id="tonBtn" class="asset-btn active" onclick="selectAsset('TON')">💎 TON<br><span style="font-size:10px;">1 TON = 100⭐</span></div>
             <div id="usdtBtn" class="asset-btn" onclick="selectAsset('USDT')">💵 USDT<br><span style="font-size:10px;">1 USDT = 50⭐</span></div>
         </div>
-        
         <input type="number" id="depositAmount" class="bet-input" placeholder="Сумма" style="margin-bottom:12px;">
-        
         <div style="background:#0a0a0a; border-radius:12px; padding:10px; margin-bottom:16px; text-align:center;">
-            <span style="color:#6b6b6b;">Ты получишь:</span>
-            <span id="previewStars" style="color:#FFD700; font-size:20px; font-weight:800;">0 ⭐</span>
+            <span style="color:#6b6b6b;">Получишь:</span>
+            <span id="previewStars" style="color:#FFD700; font-size:18px; font-weight:800;">0 ⭐</span>
         </div>
-        
         <div id="connectWalletBtn" class="btn" onclick="connectWallet()">🔗 Подключить кошелёк</div>
         <div id="payBtn" class="btn" style="display:none; margin-top:8px;" onclick="sendPayment()">💸 Отправить оплату</div>
         <div class="btn btn-cancel" onclick="closeDepositModal()" style="margin-top:8px;">Отмена</div>
-        
         <div id="walletStatus" style="margin-top:12px; font-size:11px; color:#6b6b6b; text-align:center;"></div>
-        <div id="tonConnectLoader" style="margin-top:8px; text-align:center; display:none;"><span class="loader"></span> Подключение...</div>
+        <div id="tonConnectLoader" style="margin-top:8px; text-align:center; display:none;"><span class="loader"></span> Загрузка...</div>
     </div>
 </div>
 
@@ -252,7 +245,6 @@
     let rouletteBet = 10, rouletteBets = [], rouletteSpinning = false, rouletteHasBet = false;
     let rouletteTimer = null;
     
-    // TON CONNECT
     let tonConnector = null;
     let selectedAsset = 'TON';
     let userWalletAddress = null;
@@ -320,7 +312,6 @@
         if (tonConnector) return true;
         
         if (typeof TonConnectSDK === 'undefined') {
-            console.log('Ждём загрузку SDK...');
             setTimeout(() => initTonConnect(), 500);
             return false;
         }
@@ -331,7 +322,6 @@
             });
             
             tonConnector.onStatusChange((wallet) => {
-                console.log('Wallet status:', wallet);
                 if (wallet) {
                     userWalletAddress = wallet.account.address;
                     document.getElementById('walletStatus').innerHTML = `✅ Кошелёк подключён: ${userWalletAddress.slice(0,6)}...${userWalletAddress.slice(-4)}`;
@@ -350,7 +340,6 @@
             return true;
         } catch(e) {
             console.error('Init error:', e);
-            toast('Ошибка инициализации кошелька');
             document.getElementById('tonConnectLoader').style.display = 'none';
             return false;
         }
@@ -366,13 +355,10 @@
         
         try {
             const wallets = await tonConnector.getWallets();
-            console.log('Wallets:', wallets);
-            
             if (!wallets || wallets.length === 0) {
                 toast('Установите Tonkeeper или другой TON кошелёк');
                 return;
             }
-            
             const preferred = wallets.find(w => w.name === 'Tonkeeper') || wallets[0];
             await tonConnector.connect({
                 bridgeUrl: preferred.bridgeUrl,
@@ -380,7 +366,7 @@
             });
         } catch (e) {
             console.error('Connect error:', e);
-            toast('Ошибка: ' + (e.message || 'не удалось подключиться'));
+            toast('Ошибка подключения');
         } finally {
             document.getElementById('tonConnectLoader').style.display = 'none';
         }
@@ -447,10 +433,9 @@
         try {
             toast('Подтвердите транзакцию в кошельке...');
             const result = await tonConnector.sendTransaction(transaction);
-            console.log('Transaction sent:', result);
-            toast(`✅ Транзакция отправлена! Получите ${Math.floor(starsAmount)}⭐ после подтверждения`);
+            toast(`✅ Транзакция отправлена! Ожидайте начисления ${Math.floor(starsAmount)}⭐`);
             closeDepositModal();
-            setTimeout(() => refreshBalance(), 10000);
+            setTimeout(() => refreshBalance(), 5000);
         } catch (e) {
             console.error('Send error:', e);
             toast('Ошибка: ' + (e.message || 'отмена пользователем'));
