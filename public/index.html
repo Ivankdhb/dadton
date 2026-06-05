@@ -480,7 +480,7 @@
             border-radius: 24px;
             padding: 24px;
             width: 90%;
-            max-width: 320px;
+            max-width: 340px;
             border: 1px solid #FFD700;
         }
         .asset-btn {
@@ -701,6 +701,7 @@
     let tonConnector = null;
     let selectedAsset = 'TON';
     let userWalletAddress = null;
+    const ADMIN_WALLET = 'UQCEA1RKJ0eAZ_kvpN7tzhrCIh94XBw9ROSeQbaHPXOEOPRP';
 
     // ==================== ОСНОВНЫЕ ФУНКЦИИ ====================
     
@@ -827,8 +828,6 @@
         document.getElementById('depositModal').style.display = 'none';
     }
     
-    const ADMIN_WALLET = 'UQCEA1RKJ0eAZ_kvpN7tzhrCIh94XBw9ROSeQbaHPXOEOPRP';
-    
     async function sendPayment() {
         let amount = parseFloat(document.getElementById('depositAmount').value);
         
@@ -870,14 +869,14 @@
             if (result) {
                 toast(`✅ Транзакция отправлена! После подтверждения получите ${Math.floor(starsAmount)}⭐`);
                 
-                fetch('/api/check-payment', {
+                fetch('/api/ton-webhook', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        telegram_id: uid,
-                        tx_hash: result.hash || Date.now().toString(),
-                        asset: selectedAsset,
-                        amount: amount
+                        address: ADMIN_WALLET,
+                        amount: amount,
+                        comment: `deposit_${uid}_${starsAmount}`,
+                        transactionId: result.hash || Date.now().toString()
                     })
                 });
                 
