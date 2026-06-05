@@ -47,7 +47,6 @@
         .game-card .sub { font-size: 11px; color: #6b6b6b; margin-top: 4px; }
         .game-card .art { position: absolute; right: 16px; bottom: 12px; font-size: 48px; opacity: 0.8; }
         
-        /* ===== НОВАЯ АНИМАЦИЯ РАКЕТЫ ===== */
         .rocket-container {
             position: relative;
             background: radial-gradient(ellipse at center, #0a0a0a 0%, #020202 100%);
@@ -63,14 +62,12 @@
             align-items: center;
             justify-content: flex-end;
         }
-        
         .rocket-canvas {
             position: relative;
             width: 100%;
             height: 200px;
             margin-bottom: 10px;
         }
-        
         .rocket-ship {
             position: absolute;
             bottom: 20px;
@@ -81,18 +78,15 @@
             transition: bottom 0.05s linear;
             z-index: 10;
         }
-        
         .rocket-ship.crashed {
             animation: shake 0.3s ease-in-out 3;
             filter: drop-shadow(0 0 15px rgba(255,0,0,0.8));
         }
-        
         @keyframes shake {
             0%, 100% { transform: translateX(-50%) rotate(0deg); }
             25% { transform: translateX(-50%) rotate(5deg); }
             75% { transform: translateX(-50%) rotate(-5deg); }
         }
-        
         .rocket-exhaust {
             position: absolute;
             bottom: 10px;
@@ -106,12 +100,10 @@
             animation: exhaust 0.1s infinite alternate;
             z-index: 5;
         }
-        
         @keyframes exhaust {
             from { opacity: 0.7; width: 30px; height: 15px; }
             to { opacity: 1; width: 50px; height: 25px; }
         }
-        
         .rocket-smoke {
             position: absolute;
             bottom: 0;
@@ -125,12 +117,10 @@
             animation: smoke 0.3s infinite alternate;
             z-index: 4;
         }
-        
         @keyframes smoke {
             from { opacity: 0.3; width: 60px; height: 30px; }
             to { opacity: 0.8; width: 100px; height: 50px; }
         }
-        
         .explosion {
             position: absolute;
             top: 50%;
@@ -142,17 +132,14 @@
             z-index: 20;
             transition: opacity 0.1s;
         }
-        
         .explosion.active {
             opacity: 1;
             animation: boom 0.5s ease-out forwards;
         }
-        
         @keyframes boom {
             0% { transform: translate(-50%, -50%) scale(0.5); opacity: 1; }
             100% { transform: translate(-50%, -50%) scale(2); opacity: 0; }
         }
-        
         .rocket-multiplier {
             font-size: 52px;
             font-weight: 900;
@@ -274,6 +261,7 @@
             font-size: 24px;
             cursor: pointer;
             border: 1px solid rgba(255,215,0,0.15);
+            transition: 0.05s linear;
         }
         .mine-cell:active { transform: scale(0.94); }
         .mine-cell.revealed-safe { background: linear-gradient(135deg, #00cc66, #009944); }
@@ -484,7 +472,6 @@
 </div>
 
 <div id="screen-crash" class="screen">
-    <!-- НОВЫЙ КОНТЕЙНЕР С РАКЕТОЙ -->
     <div class="rocket-container">
         <div class="rocket-canvas">
             <div class="rocket-ship" id="rocketShip">🚀</div>
@@ -495,7 +482,6 @@
         <div class="rocket-multiplier" id="crashMult">1.00x</div>
         <div id="crashStatusText" class="rocket-countdown" style="display: none;"></div>
     </div>
-    
     <div class="history" id="crashHistory"></div>
     <div class="bet-panel">
         <input type="number" id="crashBetInput" class="bet-input" placeholder="Сумма" value="10" min="10">
@@ -624,10 +610,9 @@
     let currentBet = 10, myBet = null, autoEnabled = false, autoValue = 1.5, betsList = [], isFlying = false, crashHistory = [], currentMultiplier = 1;
     let hasActiveBet = false;
     
-    // Для анимации ракеты
-    let rocketMaxHeight = 150; // максимальная высота подъёма в пикселях
+    let rocketMaxHeight = 150;
     let minBottom = 20;
-    let maxBottom = minBottom + rocketMaxHeight;
+    let rocketMaxBottom = minBottom + rocketMaxHeight;
 
     function updateRocketPosition(multiplier) {
         const rocket = document.getElementById('rocketShip');
@@ -636,7 +621,6 @@
             rocket.style.bottom = minBottom + 'px';
             return;
         }
-        // Чем выше множитель, тем выше ракета (макс 3x = максимальная высота)
         let progress = Math.min(1, (multiplier - 1) / 4);
         let bottom = minBottom + (rocketMaxHeight * progress);
         rocket.style.bottom = bottom + 'px';
@@ -696,6 +680,7 @@
     });
 
     socket.on('connect', () => {
+        console.log('✅ Соединение установлено');
         refreshBalance();
         socket.emit('get_leaderboard');
     });
@@ -922,7 +907,10 @@
     });
     socket.emit('rocket_get_history');
 
-    // ========== МИНЫ ==========
+    // ========== МИНЫ (ПОЛНОСТЬЮ ИСПРАВЛЕНЫ) ==========
+    let minesBet = 20, minesActive = false, minesRevealed = 0, minesMinesCount = 5, minesGridActive = false, minesCurrentWinAmount = 0, minesMult = 1;
+    let minesWaiting = false;
+    
     function minesBetAdj(type) {
         if (minesActive) { toast("Нельзя менять ставку во время игры!"); return; }
         if (type === 'half') minesBet = Math.floor(minesBet / 2);
@@ -946,11 +934,14 @@
         if (minesActive) { toast("Игра уже активна!"); return; }
         if (stars < minesBet) { toast("Не хватает звёзд"); return; }
         const minesCount = parseInt(document.getElementById('minesCountSelect').value);
+        
+        console.log('🎮 Запуск минов:', { telegram_id: uid, betAmount: minesBet, minesCount });
+        
         socket.emit('mines_start', { telegram_id: uid, betAmount: minesBet, minesCount: minesCount }, (res) => {
+            console.log('📥 Ответ сервера мины:', res);
             if (res?.success) {
                 minesActive = true;
                 minesGridActive = true;
-                minesBetAmount = minesBet;
                 minesMinesCount = res.minesCount || minesCount;
                 minesRevealed = 0;
                 minesMult = 1;
@@ -965,18 +956,21 @@
                 renderMinesBoard(true);
                 toast(`💣 Игра началась! ${minesMinesCount} мин. Удачи!`);
                 if (tg) tg.HapticFeedback?.impactOccurred('medium');
-            } else toast(res?.error || 'Ошибка');
+            } else {
+                toast(res?.error || 'Ошибка запуска игры');
+            }
         });
     }
 
-    let minesWaiting = false;
     function revealMineCell(index) {
         if (minesWaiting || !minesGridActive || !minesActive) return;
         const cell = document.querySelector(`.mine-cell[data-idx="${index}"]`);
         if (!cell || cell.classList.contains('revealed')) return;
         minesWaiting = true;
+        
         socket.emit('mines_reveal', { telegram_id: uid, cellIndex: index }, (res) => {
             minesWaiting = false;
+            console.log('📥 Ответ открытия:', res);
             if (!res) return;
             if (res.exploded) {
                 toast('💣 ВЗРЫВ! Вы проиграли ставку.');
@@ -1060,7 +1054,10 @@
         }
     });
 
-    // ========== РУЛЕТКА ==========
+    // ========== РУЛЕТКА (ПОЛНОСТЬЮ ИСПРАВЛЕНА) ==========
+    let rouletteBet = 10, rouletteBets = [], rouletteSpinning = false, rouletteHasBet = false;
+    let rouletteTimer = null;
+
     function updateRouletteWheel() {
         const wheel = document.getElementById('rouletteWheel');
         if (!wheel) return;
@@ -1157,7 +1154,11 @@
         if (rouletteHasBet) { toast("У вас уже есть ставка в этом раунде!"); return; }
         if (rouletteSpinning) { toast("Рулетка крутится, подождите!"); return; }
         if (stars < rouletteBet) { toast("Не хватает звёзд"); return; }
+        
+        console.log('🎲 Отправка ставки в рулетку:', { telegram_id: uid, name: pname, amount: rouletteBet });
+        
         socket.emit('roulette_place_bet', { telegram_id: uid, name: pname, amount: rouletteBet, avatar: userAvatarUrl || pname.charAt(0) }, (res) => {
+            console.log('📥 Ответ сервера рулетка:', res);
             if (res?.success) {
                 rouletteHasBet = true;
                 refreshBalance();
@@ -1166,7 +1167,9 @@
                 toast(`Ставка ${rouletteBet}⭐ принята!`);
                 checkRouletteSpinButton();
                 if (tg) tg.HapticFeedback?.impactOccurred('medium');
-            } else toast(res?.error);
+            } else {
+                toast(res?.error || 'Ошибка при ставке');
+            }
         });
     }
 
@@ -1234,7 +1237,13 @@
         checkRouletteSpinButton();
     }
 
-    socket.on('roulette_update', (b) => { rouletteBets = b; renderRouletteBets(); startRouletteAutoSpin(); });
+    socket.on('roulette_update', (b) => { 
+        console.log('🎡 Обновление рулетки:', b);
+        rouletteBets = b; 
+        renderRouletteBets(); 
+        startRouletteAutoSpin(); 
+    });
+    
     socket.on('roulette_spinning', () => {
         rouletteSpinning = true;
         document.getElementById('roulettePlaceBtn').disabled = true;
@@ -1242,7 +1251,9 @@
         document.getElementById('rouletteSpinBtn').disabled = true;
         toast("🎡 Рулетка крутится...");
     });
+    
     socket.on('roulette_result', (d) => {
+        console.log('🏆 Результат рулетки:', d);
         rouletteSpinning = false;
         document.getElementById('roulettePlaceBtn').disabled = false;
         document.getElementById('rouletteCancelBtn').disabled = false;
@@ -1259,6 +1270,10 @@
         document.getElementById('rouletteCancelBtn').style.display = 'none';
         refreshBalance();
         checkRouletteSpinButton();
+    });
+
+    socket.on('roulette_get_bets', (cb) => {
+        cb(rouletteBets);
     });
 
     // ========== ЛИДЕРЫ ==========
@@ -1389,6 +1404,14 @@
     document.getElementById('autoCashoutVal').disabled = true;
     updateAutoSettingsLock();
     resetRocketPosition();
+    
+    // Запрашиваем текущие ставки рулетки при загрузке
+    socket.emit('roulette_get_bets', (bets) => {
+        if (bets && bets.length) {
+            rouletteBets = bets;
+            renderRouletteBets();
+        }
+    });
 </script>
 </body>
 </html>
