@@ -13,14 +13,6 @@ const io = socketIo(server, {
 app.use(express.json());
 app.use(express.static('public'));
 
-// CORS для Ton Connect
-app.use((req, res, next) => {
-    res.header('Access-Control-Allow-Origin', '*');
-    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
-    next();
-});
-
-// База данных
 const db = new sqlite3.Database('dadton.db');
 
 db.serialize(() => {
@@ -45,12 +37,9 @@ db.serialize(() => {
 
 console.log('✅ База данных готова');
 
-// Константы
 const MAX_BET = 5000;
 const MIN_BET = 10;
-const ADMIN_WALLET = 'UQCEA1RKJ0eAZ_kvpN7tzhrCIh94XBw9ROSeQbaHPXOEOPRP';
 
-// Ракета
 let rocketState = {
     status: 'waiting',
     currentMultiplier: 1.00,
@@ -127,7 +116,6 @@ function startRocketFlying() {
         
         rocketState.currentMultiplier += speed * (delta / 100);
         
-        // Автовывод
         for (let bet of rocketState.bets) {
             if (!bet.cashedAt && bet.autoCashout && rocketState.currentMultiplier >= (bet.autoCashout - 0.005)) {
                 const winAmount = Math.floor(bet.amount * rocketState.currentMultiplier);
@@ -174,37 +162,6 @@ function calculateRouletteWinner() {
     }
     return null;
 }
-
-// ==================== TON CONNECT WEBHOOK ====================
-app.post('/api/ton-webhook', express.json(), (req, res) => {
-    const { address, amount, comment, transactionId } = req.body;
-    console.log('📩 Webhook:', { address, amount, comment });
-    
-    if (comment && comment.includes('deposit_')) {
-        const match = comment.match(/deposit_(\d+)_(\d+)/);
-        if (match) {
-            const telegram_id = match[1];
-            const starsAmount = parseInt(match[2]);
-            
-            db.run(`UPDATE users SET stars = stars + ? WHERE telegram_id = ?`, [starsAmount, telegram_id]);
-            console.log(`✅ Начислено ${starsAmount}⭐ пользователю ${telegram_id}`);
-        }
-    }
-    
-    res.json({ ok: true });
-});
-
-// Эндпоинт для ручного пополнения (админ)
-app.post('/api/admin/add-stars', express.json(), (req, res) => {
-    const { telegram_id, amount, admin_key } = req.body;
-    
-    if (admin_key !== 'DADTON_ADMIN_2024') {
-        return res.json({ success: false, error: 'Неверный ключ' });
-    }
-    
-    db.run(`UPDATE users SET stars = stars + ? WHERE telegram_id = ?`, [amount, telegram_id]);
-    res.json({ success: true });
-});
 
 io.on('connection', (socket) => {
     console.log('👤 Игрок подключился');
@@ -527,5 +484,4 @@ startRocketCountdown();
 const PORT = process.env.PORT || 10000;
 server.listen(PORT, () => {
     console.log(`🚀 Сервер запущен на порту ${PORT}`);
-    console.log(`💰 Кошелёк для пополнения: ${ADMIN_WALLET}`);
 });
