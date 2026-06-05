@@ -6,6 +6,8 @@
     <title>DadTon - Премиум</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="/socket.io/socket.io.js"></script>
+    <!-- Ton Connect SDK - фиксированная версия -->
+    <script src="https://cdn.jsdelivr.net/npm/@tonconnect/sdk@2.0.3/dist/tonconnect-sdk.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; }
@@ -107,7 +109,8 @@
         .modal-content { background: #0a0a0a; border-radius: 24px; padding: 24px; width: 90%; max-width: 340px; border: 1px solid #FFD700; }
         .asset-btn { flex: 1; text-align: center; padding: 10px; background: rgba(255,215,0,0.1); border-radius: 12px; cursor: pointer; transition: all 0.2s; }
         .asset-btn.active { background: rgba(255,215,0,0.3); }
-        .wallet-address { background: #000; padding: 10px; border-radius: 12px; margin: 10px 0; word-break: break-all; font-size: 11px; color: #FFD700; }
+        .loader { display: inline-block; width: 16px; height: 16px; border: 2px solid #fff; border-radius: 50%; border-top-color: #FFD700; animation: spin 0.6s linear infinite; margin-left: 8px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
@@ -197,7 +200,7 @@
 
 <div id="toast" class="toast"></div>
 
-<!-- Модальное окно пополнения (РАБОЧАЯ ВЕРСИЯ через DEEP LINK) -->
+<!-- Модальное окно пополнения (TON CONNECT - РАБОЧАЯ ВЕРСИЯ) -->
 <div id="depositModal" class="modal">
     <div class="modal-content">
         <h3 style="color:#FFD700; margin-bottom:16px; text-align:center;">💎 Пополнение</h3>
@@ -210,11 +213,11 @@
             <span style="color:#6b6b6b;">Получишь:</span>
             <span id="previewStars" style="color:#FFD700; font-size:18px; font-weight:800;">0 ⭐</span>
         </div>
-        <div class="btn" onclick="payWithTonkeeper()" style="margin-bottom:8px;">💸 Оплатить через Tonkeeper</div>
-        <div class="btn btn-cancel" onclick="closeDepositModal()">Отмена</div>
-        <div id="walletInfo" style="margin-top:12px; padding:10px; background:#0a0a0a; border-radius:12px; font-size:10px; color:#6b6b6b; text-align:center;">
-            Нажмите кнопку выше — откроется Tonkeeper с предзаполненными данными
-        </div>
+        <div id="connectWalletBtn" class="btn" onclick="connectWallet()">🔗 Подключить кошелёк</div>
+        <div id="payBtn" class="btn" style="display:none; margin-top:8px;" onclick="sendPayment()">💸 Отправить оплату</div>
+        <div class="btn btn-cancel" onclick="closeDepositModal()" style="margin-top:8px;">Отмена</div>
+        <div id="walletStatus" style="margin-top:12px; font-size:11px; color:#6b6b6b; text-align:center;"></div>
+        <div id="tonConnectLoader" style="margin-top:8px; text-align:center; display:none;"><span class="loader"></span> Загрузка...</div>
     </div>
 </div>
 
@@ -244,7 +247,10 @@
     let rouletteBet = 10, rouletteBets = [], rouletteSpinning = false, rouletteHasBet = false;
     let rouletteTimer = null;
     
+    // TON CONNECT
+    let tonConnector = null;
     let selectedAsset = 'TON';
+    let userWalletAddress = null;
     const ADMIN_WALLET = 'UQCEA1RKJ0eAZ_kvpN7tzhrCIh94XBw9ROSeQbaHPXOEOPRP';
 
     function toast(msg) {
@@ -303,7 +309,84 @@
         else return `<span style="font-size:16px;font-weight:bold;">${name ? name.charAt(0).toUpperCase() : '?'}</span>`;
     }
 
-    // ==================== ПОПОЛНЕНИЕ ЧЕРЕЗ DEEP LINK (РАБОТАЕТ 100%) ====================
+    // ==================== TON CONNECT (РАБОЧАЯ ВЕРСИЯ) ====================
+    
+    function initTonConnect() {
+        if (tonConnector) return true;
+        
+        // Проверяем загрузку библиотеки
+        if (typeof TonConnectSDK === 'undefined') {
+            console.error('TonConnectSDK не загружен');
+            document.getElementById('tonConnectLoader').style.display = 'block';
+            setTimeout(() => {
+                if (typeof TonConnectSDK === 'undefined') {
+                    toast('Ошибка загрузки кошелька, попробуйте позже');
+                    document.getElementById('tonConnectLoader').style.display = 'none';
+                } else {
+                    initTonConnect();
+                }
+            }, 2000);
+            return false;
+        }
+        
+        try {
+            tonConnector = new TonConnectSDK({
+                manifestUrl: 'https://dadton.onrender.com/tonconnect-manifest.json'
+            });
+            
+            tonConnector.onStatusChange((wallet) => {
+                console.log('Wallet status:', wallet);
+                if (wallet) {
+                    userWalletAddress = wallet.account.address;
+                    document.getElementById('walletStatus').innerHTML = `✅ Кошелёк подключён: ${userWalletAddress.slice(0,6)}...${userWalletAddress.slice(-4)}`;
+                    document.getElementById('connectWalletBtn').style.display = 'none';
+                    document.getElementById('payBtn').style.display = 'block';
+                    toast('Кошелёк успешно подключён!');
+                } else {
+                    userWalletAddress = null;
+                    document.getElementById('walletStatus').innerHTML = '';
+                    document.getElementById('connectWalletBtn').style.display = 'block';
+                    document.getElementById('payBtn').style.display = 'none';
+                }
+            });
+            
+            document.getElementById('tonConnectLoader').style.display = 'none';
+            return true;
+        } catch(e) {
+            console.error('Init error:', e);
+            toast('Ошибка инициализации кошелька');
+            document.getElementById('tonConnectLoader').style.display = 'none';
+            return false;
+        }
+    }
+    
+    async function connectWallet() {
+        document.getElementById('tonConnectLoader').style.display = 'block';
+        
+        if (!tonConnector) {
+            const inited = initTonConnect();
+            if (!inited) return;
+        }
+        
+        try {
+            const wallets = await tonConnector.getWallets();
+            console.log('Wallets:', wallets);
+            
+            // Показываем список доступных кошельков
+            if (wallets && wallets.length > 0) {
+                // Пробуем Tonkeeper, если есть
+                const preferred = wallets.find(w => w.name === 'Tonkeeper') || wallets[0];
+                await tonConnector.connect({ bridgeUrl: preferred.bridgeUrl, universalLink: preferred.universalLink });
+            } else {
+                await tonConnector.connect();
+            }
+        } catch (e) {
+            console.error('Connect error:', e);
+            toast('Ошибка подключения: ' + (e.message || 'неизвестная ошибка'));
+        } finally {
+            document.getElementById('tonConnectLoader').style.display = 'none';
+        }
+    }
     
     function selectAsset(asset) {
         selectedAsset = asset;
@@ -324,13 +407,14 @@
         document.getElementById('depositModal').style.display = 'flex';
         selectAsset('TON');
         updatePreview();
+        initTonConnect();
     }
     
     function closeDepositModal() {
         document.getElementById('depositModal').style.display = 'none';
     }
     
-    function payWithTonkeeper() {
+    async function sendPayment() {
         let amount = parseFloat(document.getElementById('depositAmount').value);
         
         if (!amount || amount <= 0) {
@@ -345,40 +429,39 @@
             toast('Минимум 1 USDT');
             return;
         }
+        if (!userWalletAddress) {
+            toast('Сначала подключите кошелёк');
+            return;
+        }
         
         const starsAmount = selectedAsset === 'TON' ? amount * 100 : amount * 50;
         const nanoAmount = Math.floor(amount * 1e9);
-        const comment = `deposit_${uid}_${Math.floor(starsAmount)}`;
         
-        // Создаём deep link для Tonkeeper
-        const url = `ton://transfer/${ADMIN_WALLET}?amount=${nanoAmount}&text=${encodeURIComponent(comment)}`;
+        const transaction = {
+            validUntil: Math.floor(Date.now() / 1000) + 600,
+            messages: [{
+                address: ADMIN_WALLET,
+                amount: nanoAmount.toString(),
+                payload: `deposit_${uid}_${starsAmount}`
+            }]
+        };
         
-        // Копируем адрес на всякий случай
-        navigator.clipboard.writeText(ADMIN_WALLET);
-        
-        toast(`✅ Откроется Tonkeeper\nОтправьте ${amount} ${selectedAsset}\nПолучите ${Math.floor(starsAmount)}⭐`);
-        
-        // Открываем Tonkeeper
-        window.open(url, '_blank');
-        
-        closeDepositModal();
-        
-        // Сообщаем админу о заявке (опционально)
-        fetch('/api/deposit-request', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                telegram_id: uid,
-                name: pname,
-                amount: amount,
-                asset: selectedAsset,
-                stars: Math.floor(starsAmount),
-                wallet: ADMIN_WALLET
-            })
-        }).catch(e => console.log('Report error:', e));
+        try {
+            toast('Подтвердите транзакцию в кошельке...');
+            const result = await tonConnector.sendTransaction(transaction);
+            console.log('Transaction result:', result);
+            if (result) {
+                toast(`✅ Транзакция отправлена! После подтверждения получите ${Math.floor(starsAmount)}⭐`);
+                closeDepositModal();
+                setTimeout(() => refreshBalance(), 5000);
+            }
+        } catch (e) {
+            console.error('Send error:', e);
+            toast('Ошибка при отправке: ' + (e.message || 'неизвестная ошибка'));
+        }
     }
 
-    // ==================== ОСТАЛЬНЫЕ ИГРЫ (РАКЕТА, МИНЫ, РУЛЕТКА) ====================
+    // ==================== ОСТАЛЬНЫЕ ИГРЫ ====================
     
     function updateRocketPosition(multiplier) {
         const rocket = document.getElementById('rocketShip');
