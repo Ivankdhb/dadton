@@ -444,6 +444,12 @@
             display: none;
             white-space: nowrap;
         }
+        
+        .multiplier-text {
+            font-size: 24px;
+            font-weight: 800;
+            color: #FFD700;
+        }
     </style>
 </head>
 <body>
@@ -509,6 +515,7 @@
     <div class="bets-list" id="crashBets"></div>
 </div>
 
+<!-- МИНЫ - ИСПРАВЛЕНЫ: УБРАНА ВТОРАЯ КНОПКА -->
 <div id="screen-mines" class="screen">
     <div class="bet-panel">
         <input type="number" id="minesBetInput" class="bet-input" placeholder="Ставка" value="20" min="10">
@@ -526,14 +533,14 @@
                 <option value="16">16</option><option value="18">18</option><option value="20">20</option><option value="22">22</option><option value="24">24</option>
             </select>
         </div>
+        <!-- ЕДИНАЯ КНОПКА: Новая игра / Забрать выигрыш -->
         <div class="btn" id="minesBtn" onclick="minesClick()">💣 Новая игра</div>
     </div>
     <div class="mines-grid" id="minesBoard"></div>
     <div style="text-align:center; margin:12px 0;">
         <span style="color:#6b6b6b;">Множитель: </span>
-        <span id="minesMult" style="font-size:24px; font-weight:800; color:#FFD700;">1.00x</span>
+        <span id="minesMult" class="multiplier-text">1.00x</span>
     </div>
-    <div class="btn" id="minesCash" disabled onclick="minesCashout()" style="background:#2a2a2a; color:#666;">💰 Забрать выигрыш</div>
 </div>
 
 <div id="screen-roulette" class="screen">
@@ -907,7 +914,7 @@
     });
     socket.emit('rocket_get_history');
 
-    // ========== МИНЫ (ПОЛНОСТЬЮ ИСПРАВЛЕНЫ) ==========
+    // ========== МИНЫ (ИСПРАВЛЕНЫ: ОДНА КНОПКА + ПРАВИЛЬНЫЙ КЭШАУТ) ==========
     let minesBet = 20, minesActive = false, minesRevealed = 0, minesMinesCount = 5, minesGridActive = false, minesCurrentWinAmount = 0, minesMult = 1;
     let minesWaiting = false;
     
@@ -947,11 +954,8 @@
                 minesMult = 1;
                 minesCurrentWinAmount = 0;
                 document.getElementById('minesMult').innerText = '1.00x';
-                document.getElementById('minesBtn').innerText = "💰 Забрать";
+                document.getElementById('minesBtn').innerText = "💰 Забрать выигрыш";
                 document.getElementById('minesBtn').classList.add('btn-cashout');
-                document.getElementById('minesCash').disabled = false;
-                document.getElementById('minesCash').style.background = "linear-gradient(135deg, #00cc66, #009944)";
-                document.getElementById('minesCash').style.color = "#fff";
                 refreshBalance();
                 renderMinesBoard(true);
                 toast(`💣 Игра началась! ${minesMinesCount} мин. Удачи!`);
@@ -980,8 +984,6 @@
                 renderMinesBoard(false);
                 document.getElementById('minesBtn').innerText = "💣 Новая игра";
                 document.getElementById('minesBtn').classList.remove('btn-cashout');
-                document.getElementById('minesCash').disabled = true;
-                document.getElementById('minesCash').style.background = "#2a2a2a";
                 refreshBalance();
                 if (tg) tg.HapticFeedback?.notificationOccurred('error');
                 return;
@@ -1001,8 +1003,6 @@
                     renderMinesBoard(false);
                     document.getElementById('minesBtn').innerText = "💣 Новая игра";
                     document.getElementById('minesBtn').classList.remove('btn-cashout');
-                    document.getElementById('minesCash').disabled = true;
-                    document.getElementById('minesCash').style.background = "#2a2a2a";
                     refreshBalance();
                     if (tg) tg.HapticFeedback?.notificationOccurred('success');
                 }
@@ -1022,8 +1022,6 @@
                 renderMinesBoard(false);
                 document.getElementById('minesBtn').innerText = "💣 Новая игра";
                 document.getElementById('minesBtn').classList.remove('btn-cashout');
-                document.getElementById('minesCash').disabled = true;
-                document.getElementById('minesCash').style.background = "#2a2a2a";
                 refreshBalance();
                 if (tg) tg.HapticFeedback?.impactOccurred('light');
             } else toast(res?.error || 'Ошибка');
@@ -1054,7 +1052,7 @@
         }
     });
 
-    // ========== РУЛЕТКА (ПОЛНОСТЬЮ ИСПРАВЛЕНА) ==========
+    // ========== РУЛЕТКА ==========
     let rouletteBet = 10, rouletteBets = [], rouletteSpinning = false, rouletteHasBet = false;
     let rouletteTimer = null;
 
@@ -1405,7 +1403,6 @@
     updateAutoSettingsLock();
     resetRocketPosition();
     
-    // Запрашиваем текущие ставки рулетки при загрузке
     socket.emit('roulette_get_bets', (bets) => {
         if (bets && bets.length) {
             rouletteBets = bets;
