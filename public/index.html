@@ -47,21 +47,122 @@
         .game-card .sub { font-size: 11px; color: #6b6b6b; margin-top: 4px; }
         .game-card .art { position: absolute; right: 16px; bottom: 12px; font-size: 48px; opacity: 0.8; }
         
-        .rocket-display {
-            background: radial-gradient(ellipse at center, #0f0f0f 0%, #050505 100%);
-            border-radius: 20px;
+        /* ===== НОВАЯ АНИМАЦИЯ РАКЕТЫ ===== */
+        .rocket-container {
+            position: relative;
+            background: radial-gradient(ellipse at center, #0a0a0a 0%, #020202 100%);
+            border-radius: 30px;
             padding: 20px;
             text-align: center;
-            border: 1px solid rgba(255,215,0,0.15);
+            border: 1px solid rgba(255,215,0,0.2);
             margin-bottom: 16px;
+            overflow: hidden;
+            min-height: 280px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-end;
         }
+        
+        .rocket-canvas {
+            position: relative;
+            width: 100%;
+            height: 200px;
+            margin-bottom: 10px;
+        }
+        
+        .rocket-ship {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 64px;
+            filter: drop-shadow(0 0 10px rgba(255,215,0,0.5));
+            transition: bottom 0.05s linear;
+            z-index: 10;
+        }
+        
+        .rocket-ship.crashed {
+            animation: shake 0.3s ease-in-out 3;
+            filter: drop-shadow(0 0 15px rgba(255,0,0,0.8));
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(-50%) rotate(0deg); }
+            25% { transform: translateX(-50%) rotate(5deg); }
+            75% { transform: translateX(-50%) rotate(-5deg); }
+        }
+        
+        .rocket-exhaust {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 40px;
+            height: 20px;
+            background: radial-gradient(ellipse, #ff6600, #ff3300);
+            border-radius: 50%;
+            filter: blur(4px);
+            animation: exhaust 0.1s infinite alternate;
+            z-index: 5;
+        }
+        
+        @keyframes exhaust {
+            from { opacity: 0.7; width: 30px; height: 15px; }
+            to { opacity: 1; width: 50px; height: 25px; }
+        }
+        
+        .rocket-smoke {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            height: 40px;
+            background: radial-gradient(ellipse, rgba(100,100,100,0.6), transparent);
+            border-radius: 50%;
+            filter: blur(8px);
+            animation: smoke 0.3s infinite alternate;
+            z-index: 4;
+        }
+        
+        @keyframes smoke {
+            from { opacity: 0.3; width: 60px; height: 30px; }
+            to { opacity: 0.8; width: 100px; height: 50px; }
+        }
+        
+        .explosion {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 80px;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 20;
+            transition: opacity 0.1s;
+        }
+        
+        .explosion.active {
+            opacity: 1;
+            animation: boom 0.5s ease-out forwards;
+        }
+        
+        @keyframes boom {
+            0% { transform: translate(-50%, -50%) scale(0.5); opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(2); opacity: 0; }
+        }
+        
         .rocket-multiplier {
             font-size: 52px;
             font-weight: 900;
             font-family: monospace;
             letter-spacing: 2px;
+            margin-top: 10px;
+            z-index: 15;
+            position: relative;
         }
-        .rocket-multiplier.flying { color: #FFD700; text-shadow: 0 0 20px rgba(255,215,0,0.3); }
+        .rocket-multiplier.flying { color: #FFD700; text-shadow: 0 0 20px rgba(255,215,0,0.5); }
         .rocket-multiplier.crashed { color: #ff4444; }
         .rocket-countdown { font-size: 40px; font-weight: 900; color: #FFD700; }
         
@@ -383,10 +484,18 @@
 </div>
 
 <div id="screen-crash" class="screen">
-    <div class="rocket-display">
+    <!-- НОВЫЙ КОНТЕЙНЕР С РАКЕТОЙ -->
+    <div class="rocket-container">
+        <div class="rocket-canvas">
+            <div class="rocket-ship" id="rocketShip">🚀</div>
+            <div class="rocket-exhaust" id="rocketExhaust"></div>
+            <div class="rocket-smoke" id="rocketSmoke"></div>
+            <div class="explosion" id="explosion">💥</div>
+        </div>
         <div class="rocket-multiplier" id="crashMult">1.00x</div>
         <div id="crashStatusText" class="rocket-countdown" style="display: none;"></div>
     </div>
+    
     <div class="history" id="crashHistory"></div>
     <div class="bet-panel">
         <input type="number" id="crashBetInput" class="bet-input" placeholder="Сумма" value="10" min="10">
@@ -514,11 +623,40 @@
 
     let currentBet = 10, myBet = null, autoEnabled = false, autoValue = 1.5, betsList = [], isFlying = false, crashHistory = [], currentMultiplier = 1;
     let hasActiveBet = false;
+    
+    // Для анимации ракеты
+    let rocketMaxHeight = 150; // максимальная высота подъёма в пикселях
+    let minBottom = 20;
+    let maxBottom = minBottom + rocketMaxHeight;
 
-    let minesBet = 20, minesActive = false, minesRevealed = 0, minesMinesCount = 5, minesBetAmount = 0, minesMult = 1, minesGridActive = false, minesCurrentWinAmount = 0;
-
-    let rouletteBet = 10, rouletteBets = [], rouletteSpinning = false, rouletteHasBet = false;
-    let rouletteTimer = null;
+    function updateRocketPosition(multiplier) {
+        const rocket = document.getElementById('rocketShip');
+        if (!rocket) return;
+        if (!isFlying) {
+            rocket.style.bottom = minBottom + 'px';
+            return;
+        }
+        // Чем выше множитель, тем выше ракета (макс 3x = максимальная высота)
+        let progress = Math.min(1, (multiplier - 1) / 4);
+        let bottom = minBottom + (rocketMaxHeight * progress);
+        rocket.style.bottom = bottom + 'px';
+    }
+    
+    function showExplosion() {
+        const explosion = document.getElementById('explosion');
+        const rocket = document.getElementById('rocketShip');
+        rocket.classList.add('crashed');
+        explosion.classList.add('active');
+        setTimeout(() => {
+            explosion.classList.remove('active');
+            rocket.classList.remove('crashed');
+        }, 500);
+    }
+    
+    function resetRocketPosition() {
+        const rocket = document.getElementById('rocketShip');
+        if (rocket) rocket.style.bottom = minBottom + 'px';
+    }
 
     function toast(msg) {
         const t = document.getElementById('toast');
@@ -697,6 +835,7 @@
         const multDiv = document.getElementById('crashMult');
         if (s > 0) {
             isFlying = false;
+            resetRocketPosition();
             if (statusDiv) { multDiv.style.display = 'none'; statusDiv.style.display = 'block'; statusDiv.innerHTML = s; }
             if (el) el.innerHTML = `⏳ Старт через ${s}`;
         } else if (s === 0) {
@@ -709,6 +848,7 @@
             if (el && !isFlying) el.innerHTML = '● Ожидание';
             if (statusDiv) statusDiv.style.display = 'none';
             if (multDiv) multDiv.style.display = 'block';
+            resetRocketPosition();
         }
         updateButtonUI();
     });
@@ -717,12 +857,14 @@
         isFlying = true;
         document.getElementById('crashMult').innerHTML = '1.00x';
         document.getElementById('crashMult').className = 'rocket-multiplier flying';
+        resetRocketPosition();
         updateButtonUI();
     });
 
     socket.on('rocket_multiplier', (m) => {
         currentMultiplier = m;
         document.getElementById('crashMult').innerHTML = m.toFixed(2) + 'x';
+        updateRocketPosition(m);
         if (isFlying && hasActiveBet && myBet && !myBet.cashed && autoEnabled && currentMultiplier >= myBet.autoCashout - 0.005) {
             cashout();
         }
@@ -730,6 +872,7 @@
 
     socket.on('rocket_crash', (mult) => {
         isFlying = false;
+        showExplosion();
         if (hasActiveBet && myBet && !myBet.cashed) {
             gameHistory.unshift({ game: 'Ракета', amount: -myBet.amount, time: new Date().toLocaleTimeString() });
             if (gameHistory.length > 10) gameHistory.pop();
@@ -743,7 +886,10 @@
         if (hist) hist.innerHTML = crashHistory.map(m => `<div class="history-item">${m}x</div>`).join('');
         document.getElementById('crashMult').className = 'rocket-multiplier crashed';
         document.getElementById('crashMult').innerHTML = 'ВЗРЫВ!';
-        setTimeout(() => { refreshBalance(); }, 500);
+        setTimeout(() => { 
+            refreshBalance(); 
+            resetRocketPosition();
+        }, 500);
         updateAutoSettingsLock();
         updateButtonUI();
     });
@@ -1229,7 +1375,7 @@
         document.getElementById(`screen-${game}`).classList.add('active');
         if (game === 'mines') renderMinesBoard(false);
         if (game === 'roulette') startRouletteAutoSpin();
-        if (game === 'crash') { updateButtonUI(); updateAutoSettingsLock(); }
+        if (game === 'crash') { updateButtonUI(); updateAutoSettingsLock(); resetRocketPosition(); }
         if (game !== 'roulette') stopRouletteAutoSpin();
     }
 
@@ -1242,6 +1388,7 @@
     document.getElementById('autoCashoutToggle').checked = false;
     document.getElementById('autoCashoutVal').disabled = true;
     updateAutoSettingsLock();
+    resetRocketPosition();
 </script>
 </body>
 </html>
