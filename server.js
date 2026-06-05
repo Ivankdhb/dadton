@@ -119,7 +119,7 @@ function startRocketFlying() {
         let adjustedSpeed = speed * (delta / 100);
         rocketState.currentMultiplier += adjustedSpeed;
         
-        // Автовывод (точный, без +0.01)
+        // Автовывод
         for (let bet of rocketState.bets) {
             if (!bet.cashedAt && bet.autoCashout && rocketState.currentMultiplier >= (bet.autoCashout - 0.005)) {
                 const winAmount = Math.floor(bet.amount * rocketState.currentMultiplier);
@@ -317,9 +317,11 @@ io.on('connection', (socket) => {
         });
     });
     
-    // ===== МИНЫ =====
+    // ===== МИНЫ (ИСПРАВЛЕНЫ) =====
     socket.on('mines_start', (data, callback) => {
         const { telegram_id, betAmount, minesCount } = data;
+        
+        console.log(`🎮 Мины: попытка начать игру ${telegram_id} на ${betAmount}⭐ с ${minesCount} минами`);
         
         if (betAmount < MIN_BET) {
             if (callback) callback({ success: false, error: `Минимум ${MIN_BET} звёзд` });
@@ -337,35 +339,51 @@ io.on('connection', (socket) => {
         }
         
         db.get(`SELECT stars FROM users WHERE telegram_id = ?`, [telegram_id], (err, row) => {
-            if (!row || row.stars < betAmount) {
-                if (callback) callback({ success: false, error: `Недостаточно звёзд!` });
+            if (err) {
+                console.error('DB error:', err);
+                if (callback) callback({ success: false, error: 'Ошибка базы данных' });
                 return;
             }
             
-            db.run(`UPDATE users SET stars = stars - ?, games_played = games_played + 1 WHERE telegram_id = ?`, [betAmount, telegram_id]);
-            
-            const totalCells = 25;
-            const mineIndices = [];
-            while (mineIndices.length < minesCount) {
-                const idx = Math.floor(Math.random() * totalCells);
-                if (!mineIndices.includes(idx)) mineIndices.push(idx);
+            if (!row || row.stars < betAmount) {
+                if (callback) callback({ success: false, error: `Недостаточно звёзд! Нужно ${betAmount}, есть ${row?.stars || 0}` });
+                return;
             }
             
-            minesState.set(telegram_id, {
-                grid: mineIndices,
-                bet: betAmount,
-                minesCount: minesCount,
-                revealed: 0,
-                active: true
+            db.run(`UPDATE users SET stars = stars - ?, games_played = games_played + 1 WHERE telegram_id = ?`, [betAmount, telegram_id], (err) => {
+                if (err) {
+                    console.error('Update error:', err);
+                    if (callback) callback({ success: false, error: 'Ошибка обновления баланса' });
+                    return;
+                }
+                
+                const totalCells = 25;
+                const mineIndices = [];
+                while (mineIndices.length < minesCount) {
+                    const idx = Math.floor(Math.random() * totalCells);
+                    if (!mineIndices.includes(idx)) mineIndices.push(idx);
+                }
+                
+                minesState.set(telegram_id, {
+                    grid: mineIndices,
+                    bet: betAmount,
+                    minesCount: minesCount,
+                    revealed: 0,
+                    active: true
+                });
+                
+                console.log(`✅ Мины: игра создана для ${telegram_id}, мин: ${minesCount}`);
+                
+                if (callback) callback({ success: true, minesCount: minesCount });
             });
-            
-            if (callback) callback({ success: true, minesCount });
         });
     });
     
     socket.on('mines_reveal', (data, callback) => {
         const { telegram_id, cellIndex } = data;
         const game = minesState.get(telegram_id);
+        
+        console.log(`🔍 Мины: открытие клетки ${cellIndex} для ${telegram_id}`);
         
         if (!game || !game.active) {
             if (callback) callback({ success: false, error: 'Игра не активна' });
@@ -387,6 +405,8 @@ io.on('connection', (socket) => {
         const multiplier = (safeCells - game.revealed + game.minesCount) / (safeCells - game.revealed);
         const finalMultiplier = Math.min(multiplier, 3.5);
         const winAmount = Math.floor(game.bet * finalMultiplier);
+        
+        console.log(`✅ Мины: открыто ${game.revealed}/${safeCells}, множитель ${finalMultiplier.toFixed(2)}x, выигрыш ${winAmount}`);
         
         if (callback) callback({ success: true, revealed: game.revealed, multiplier: finalMultiplier.toFixed(2), winAmount });
         
@@ -411,6 +431,8 @@ io.on('connection', (socket) => {
     socket.on('mines_cashout', (data, callback) => {
         const { telegram_id } = data;
         const game = minesState.get(telegram_id);
+        
+        console.log(`💰 Мины: кэшаут для ${telegram_id}`);
         
         if (!game || !game.active) {
             if (callback) callback({ success: false, error: 'Игра не активна' });
@@ -440,7 +462,7 @@ io.on('connection', (socket) => {
         if (callback) callback({ success: true, winAmount });
     });
     
-    // ===== РУЛЕТКА =====
+    // ===== РУЛЕТКА (ИСПРАВЛЕНА) =====
     socket.on('roulette_place_bet', (data, callback) => {
         if (rouletteIsSpinning) {
             if (callback) callback({ success: false, error: 'Рулетка крутится!' });
@@ -448,6 +470,8 @@ io.on('connection', (socket) => {
         }
         
         const { telegram_id, name, amount, avatar } = data;
+        
+        console.log(`🎡 Рулетка: ставка от ${name} на ${amount}⭐`);
         
         if (amount < MIN_BET) {
             if (callback) callback({ success: false, error: `Минимум ${MIN_BET} звёзд` });
@@ -465,22 +489,38 @@ io.on('connection', (socket) => {
         }
         
         db.get(`SELECT stars FROM users WHERE telegram_id = ?`, [telegram_id], (err, row) => {
-            if (!row || row.stars < amount) {
-                if (callback) callback({ success: false, error: `Недостаточно звёзд!` });
+            if (err) {
+                console.error('DB error:', err);
+                if (callback) callback({ success: false, error: 'Ошибка базы данных' });
                 return;
             }
             
-            db.run(`UPDATE users SET stars = stars - ?, games_played = games_played + 1 WHERE telegram_id = ?`, [amount, telegram_id]);
+            if (!row || row.stars < amount) {
+                if (callback) callback({ success: false, error: `Недостаточно звёзд! Нужно ${amount}, есть ${row?.stars || 0}` });
+                return;
+            }
             
-            rouletteBets.push({ telegram_id, name, amount, avatar: avatar || '👤' });
-            io.emit('roulette_update', rouletteBets);
-            if (callback) callback({ success: true });
+            db.run(`UPDATE users SET stars = stars - ?, games_played = games_played + 1 WHERE telegram_id = ?`, [amount, telegram_id], (err) => {
+                if (err) {
+                    console.error('Update error:', err);
+                    if (callback) callback({ success: false, error: 'Ошибка обновления баланса' });
+                    return;
+                }
+                
+                rouletteBets.push({ telegram_id, name, amount, avatar: avatar || '👤' });
+                io.emit('roulette_update', rouletteBets);
+                console.log(`✅ Рулетка: текущие ставки:`, rouletteBets);
+                if (callback) callback({ success: true });
+            });
         });
     });
     
     socket.on('roulette_cancel_bet', (data, callback) => {
         const { telegram_id, name } = data;
         const betIndex = rouletteBets.findIndex(b => b.telegram_id === telegram_id);
+        
+        console.log(`❌ Рулетка: отмена ставки для ${name}`);
+        
         if (betIndex !== -1) {
             const bet = rouletteBets[betIndex];
             db.run(`UPDATE users SET stars = stars + ? WHERE telegram_id = ?`, [bet.amount, telegram_id]);
@@ -498,10 +538,12 @@ io.on('connection', (socket) => {
             return;
         }
         
-        if (rouletteBets.length === 0) {
-            if (callback) callback({ success: false, error: 'Нет ставок!' });
+        if (rouletteBets.length < 2) {
+            if (callback) callback({ success: false, error: 'Нужно минимум 2 участника!' });
             return;
         }
+        
+        console.log(`🎲 Рулетка: запуск вращения с ${rouletteBets.length} участниками`);
         
         rouletteIsSpinning = true;
         io.emit('roulette_spinning');
@@ -509,6 +551,8 @@ io.on('connection', (socket) => {
         setTimeout(() => {
             const winner = calculateRouletteWinner();
             const total = rouletteBets.reduce((s, b) => s + b.amount, 0);
+            
+            console.log(`🏆 Рулетка: победитель ${winner?.name}, банк ${total}⭐`);
             
             if (winner) {
                 const winAmount = total;
@@ -570,10 +614,10 @@ server.listen(PORT, () => {
     ║   🚀 DADTON СЕРВЕР ЗАПУЩЕН          ║
     ║   http://localhost:${PORT}              ║
     ║                                      ║
-    ║   ⚡ РАКЕТА: безопасные ставки       ║
-    ║   💣 МИНЫ: честные иксы             ║
-    ║   🎡 РУЛЕТКА: анти-фарм             ║
-    ║   👥 РЕФЕРАЛЫ: 10% с проигрыша      ║
+    ║   ⚡ РАКЕТА: работает               ║
+    ║   💣 МИНЫ: ИСПРАВЛЕНЫ               ║
+    ║   🎡 РУЛЕТКА: ИСПРАВЛЕНА            ║
+    ║   👥 РЕФЕРАЛЫ: 10% с оборота        ║
     ╚══════════════════════════════════════╝
     `);
 });
