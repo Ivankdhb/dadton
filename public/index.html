@@ -27,8 +27,19 @@
             top: 0;
             z-index: 100;
         }
-        .logo { font-size: 22px; font-weight: 900; background: linear-gradient(135deg, #FFD700, #FFF8DC); -webkit-background-clip: text; background-clip: text; color: transparent; }
-        .balance { background: rgba(0,0,0,0.6); border: 1px solid rgba(255,215,0,0.3); padding: 6px 18px; border-radius: 40px; color: #FFD700; font-weight: 700; font-size: 14px; }
+        .logo { font-size: 22px; font-weight: 900; background: linear-gradient(135deg, #FFD700, #FFF8DC); -webkit-background-clip: text; background-clip: text; color: transparent; cursor: pointer; }
+        .balance { 
+            background: rgba(0,0,0,0.6); 
+            border: 1px solid rgba(255,215,0,0.3); 
+            padding: 6px 18px; 
+            border-radius: 40px; 
+            color: #FFD700; 
+            font-weight: 700; 
+            font-size: 14px; 
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .balance:active { transform: scale(0.95); background: rgba(255,215,0,0.2); }
         
         .screen { display: none; padding: 16px; }
         .screen.active { display: block; }
@@ -211,7 +222,7 @@
         input:checked + .slider:before { transform: translateX(24px); }
         
         .btn {
-            background: linear-gradient(135deg, #FFD700, #FFA500);
+            background: linear-gradient(135deg, #FFD700, #FF8C00);
             width: 100%;
             padding: 14px;
             border: none;
@@ -221,11 +232,17 @@
             font-size: 16px;
             cursor: pointer;
             text-align: center;
-            transition: transform 0.1s;
+            transition: all 0.1s ease;
+            box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3);
         }
         .btn:active { transform: scale(0.97); }
-        .btn-cancel { background: linear-gradient(135deg, #ff4444, #cc0000); color: #fff; }
-        .btn-cashout { background: linear-gradient(135deg, #00cc66, #009944); color: #fff; }
+        .btn-cancel { background: linear-gradient(135deg, #ff4444, #cc0000); color: #fff; box-shadow: 0 4px 15px rgba(255, 0, 0, 0.3); }
+        .btn-cashout { background: linear-gradient(135deg, #00ff66, #009944); color: #fff; box-shadow: 0 4px 15px rgba(0, 255, 100, 0.3); animation: pulse 0.8s infinite; }
+        @keyframes pulse {
+            0% { box-shadow: 0 4px 15px rgba(0, 255, 100, 0.3); }
+            50% { box-shadow: 0 4px 25px rgba(0, 255, 100, 0.8); }
+            100% { box-shadow: 0 4px 15px rgba(0, 255, 100, 0.3); }
+        }
         
         .history { display: flex; gap: 6px; overflow-x: auto; margin: 12px 0; padding-bottom: 4px; }
         .history-item { background: #0a0a0a; padding: 4px 12px; border-radius: 30px; font-size: 12px; font-weight: 600; border: 1px solid rgba(255,215,0,0.15); }
@@ -445,18 +462,60 @@
             white-space: nowrap;
         }
         
-        .multiplier-text {
-            font-size: 24px;
-            font-weight: 800;
-            color: #FFD700;
+        /* Модальное окно пополнения */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.95);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-content {
+            background: #0a0a0a;
+            border-radius: 24px;
+            padding: 24px;
+            width: 90%;
+            max-width: 400px;
+            border: 1px solid #FFD700;
+        }
+        .asset-selector {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .asset-btn {
+            flex: 1;
+            text-align: center;
+            padding: 12px;
+            background: rgba(255,215,0,0.1);
+            border: 1px solid rgba(255,215,0,0.2);
+            border-radius: 16px;
+            cursor: pointer;
+        }
+        .asset-btn.active {
+            background: rgba(255,215,0,0.3);
+            border-color: #FFD700;
+        }
+        .preview-info {
+            background: #0a0a0a;
+            border-radius: 16px;
+            padding: 12px;
+            margin-bottom: 16px;
+            text-align: center;
+            border: 1px solid rgba(255,215,0,0.2);
         }
     </style>
 </head>
 <body>
 
 <header class="luxury-header">
-    <div class="logo">🎲 DadTon</div>
-    <div class="balance">⭐ <span id="balance">0</span></div>
+    <div class="logo" onclick="goTo('home')">🎲 DadTon</div>
+    <div class="balance" onclick="showDepositModal()">⭐ <span id="balance">0</span></div>
 </header>
 
 <div id="screen-home" class="screen active">
@@ -515,7 +574,6 @@
     <div class="bets-list" id="crashBets"></div>
 </div>
 
-<!-- МИНЫ - ИСПРАВЛЕНЫ: УБРАНА ВТОРАЯ КНОПКА -->
 <div id="screen-mines" class="screen">
     <div class="bet-panel">
         <input type="number" id="minesBetInput" class="bet-input" placeholder="Ставка" value="20" min="10">
@@ -533,14 +591,14 @@
                 <option value="16">16</option><option value="18">18</option><option value="20">20</option><option value="22">22</option><option value="24">24</option>
             </select>
         </div>
-        <!-- ЕДИНАЯ КНОПКА: Новая игра / Забрать выигрыш -->
         <div class="btn" id="minesBtn" onclick="minesClick()">💣 Новая игра</div>
     </div>
     <div class="mines-grid" id="minesBoard"></div>
     <div style="text-align:center; margin:12px 0;">
         <span style="color:#6b6b6b;">Множитель: </span>
-        <span id="minesMult" class="multiplier-text">1.00x</span>
+        <span id="minesMult" style="font-size:24px; font-weight:800; color:#FFD700;">1.00x</span>
     </div>
+    <div class="btn" id="minesCash" disabled onclick="minesCashout()" style="background:#2a2a2a; color:#666;">💰 Забрать выигрыш</div>
 </div>
 
 <div id="screen-roulette" class="screen">
@@ -585,6 +643,7 @@
             <div class="stat-card"><div style="font-size:10px; color:#6b6b6b;">🏆 Побед</div><div style="font-size:18px; font-weight:800;" id="profWins">0</div></div>
             <div class="stat-card"><div style="font-size:10px; color:#6b6b6b;">💀 Винрейт</div><div style="font-size:18px; font-weight:800;" id="profWr">0%</div></div>
         </div>
+        <div class="btn" onclick="showDepositModal()" style="background: linear-gradient(135deg, #FFD700, #FFA500); margin-top: 16px;">💎 ПОПОЛНИТЬ ЗВЁЗДЫ</div>
     </div>
     <div class="subtab-bar">
         <button class="subtab" onclick="switchSubtab('games', this)">Мои игры</button>
@@ -598,7 +657,56 @@
     <div class="nav-item" onclick="tab('leaders', this)"><span class="nav-icon">🏆</span><span class="nav-label">Лидеры</span></div>
     <div class="nav-item" onclick="tab('profile', this)"><span class="nav-icon">👤</span><span class="nav-label">Профиль</span></div>
 </nav>
+
 <div id="toast" class="toast"></div>
+
+<!-- Модальное окно пополнения -->
+<div id="depositModal" class="modal">
+    <div class="modal-content">
+        <h3 style="color:#FFD700; margin-bottom:16px; text-align:center;">💎 Пополнение звёзд</h3>
+        
+        <div class="asset-selector">
+            <div class="asset-btn" data-asset="TON" onclick="selectAsset('TON')">
+                💎 TON<br><small>100⭐/1 TON</small>
+            </div>
+            <div class="asset-btn" data-asset="USDT" onclick="selectAsset('USDT')">
+                💵 USDT<br><small>50⭐/1 USDT</small>
+            </div>
+        </div>
+        
+        <div id="tonInput">
+            <div style="display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap;">
+                <div class="preset" onclick="setCryptoAmount(0.5)">0.5 TON (50⭐)</div>
+                <div class="preset" onclick="setCryptoAmount(1)">1 TON (100⭐)</div>
+                <div class="preset" onclick="setCryptoAmount(5)">5 TON (500⭐)</div>
+                <div class="preset" onclick="setCryptoAmount(10)">10 TON (1000⭐)</div>
+            </div>
+            <input type="number" id="cryptoAmount" placeholder="Сумма в TON" step="0.1" min="0.5" class="bet-input" style="margin-bottom:12px;">
+        </div>
+        
+        <div id="usdtInput" style="display:none;">
+            <div style="display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap;">
+                <div class="preset" onclick="setCryptoAmount(1)">1 USDT (50⭐)</div>
+                <div class="preset" onclick="setCryptoAmount(5)">5 USDT (250⭐)</div>
+                <div class="preset" onclick="setCryptoAmount(10)">10 USDT (500⭐)</div>
+                <div class="preset" onclick="setCryptoAmount(50)">50 USDT (2500⭐)</div>
+            </div>
+            <input type="number" id="cryptoAmountUsdt" placeholder="Сумма в USDT" step="1" min="1" class="bet-input" style="margin-bottom:12px;">
+        </div>
+        
+        <div class="preview-info">
+            <span style="color:#6b6b6b;">Вы получите:</span>
+            <span id="previewStars" style="color:#FFD700; font-size:20px; font-weight:800; margin-left:8px;">0 ⭐</span>
+        </div>
+        
+        <div class="btn" onclick="submitDeposit()" style="margin-bottom:8px;">💎 Создать счёт</div>
+        <div class="btn btn-cancel" onclick="closeDepositModal()">Отмена</div>
+        
+        <div style="margin-top:12px; font-size:10px; color:#6b6b6b; text-align:center;">
+            💡 Деньги поступают на кошелёк администратора,<br>вы получаете звёзды автоматически
+        </div>
+    </div>
+</div>
 
 <script>
     const tg = window.Telegram?.WebApp;
@@ -619,36 +727,17 @@
     
     let rocketMaxHeight = 150;
     let minBottom = 20;
-    let rocketMaxBottom = minBottom + rocketMaxHeight;
-
-    function updateRocketPosition(multiplier) {
-        const rocket = document.getElementById('rocketShip');
-        if (!rocket) return;
-        if (!isFlying) {
-            rocket.style.bottom = minBottom + 'px';
-            return;
-        }
-        let progress = Math.min(1, (multiplier - 1) / 4);
-        let bottom = minBottom + (rocketMaxHeight * progress);
-        rocket.style.bottom = bottom + 'px';
-    }
     
-    function showExplosion() {
-        const explosion = document.getElementById('explosion');
-        const rocket = document.getElementById('rocketShip');
-        rocket.classList.add('crashed');
-        explosion.classList.add('active');
-        setTimeout(() => {
-            explosion.classList.remove('active');
-            rocket.classList.remove('crashed');
-        }, 500);
-    }
+    let minesBet = 20, minesActive = false, minesRevealed = 0, minesMinesCount = 5, minesGridActive = false, minesCurrentWinAmount = 0, minesMult = 1;
+    let minesWaiting = false;
     
-    function resetRocketPosition() {
-        const rocket = document.getElementById('rocketShip');
-        if (rocket) rocket.style.bottom = minBottom + 'px';
-    }
+    let rouletteBet = 10, rouletteBets = [], rouletteSpinning = false, rouletteHasBet = false;
+    let rouletteTimer = null;
+    
+    let selectedAsset = 'TON';
 
+    // ==================== ОСНОВНЫЕ ФУНКЦИИ ====================
+    
     function toast(msg) {
         const t = document.getElementById('toast');
         t.innerText = msg;
@@ -681,6 +770,15 @@
             }
         });
     }
+    
+    function checkBalanceBeforeBet(needAmount) {
+        if (stars < needAmount) {
+            toast(`❌ Не хватает ${needAmount - stars}⭐. Пополните баланс!`);
+            showDepositModal();
+            return false;
+        }
+        return true;
+    }
 
     socket.emit('register', { telegram_id: uid, name: pname, avatar: userAvatarUrl || pname.charAt(0), referrer_id: null }, (res) => {
         if (res?.success) { stars = res.stars; updateUI(); }
@@ -697,7 +795,136 @@
         else return `<span style="font-size:16px;font-weight:bold;">${name ? name.charAt(0).toUpperCase() : '?'}</span>`;
     }
 
-    // ========== РАКЕТА ==========
+    // ==================== ПОПОЛНЕНИЕ ====================
+    
+    function selectAsset(asset) {
+        selectedAsset = asset;
+        document.querySelectorAll('.asset-btn').forEach(btn => {
+            btn.classList.remove('active');
+            if (btn.getAttribute('data-asset') === asset) btn.classList.add('active');
+        });
+        
+        document.getElementById('tonInput').style.display = asset === 'TON' ? 'block' : 'none';
+        document.getElementById('usdtInput').style.display = asset === 'USDT' ? 'block' : 'none';
+        updatePreview();
+    }
+    
+    function setCryptoAmount(amount) {
+        if (selectedAsset === 'TON') {
+            document.getElementById('cryptoAmount').value = amount;
+        } else {
+            document.getElementById('cryptoAmountUsdt').value = amount;
+        }
+        updatePreview();
+    }
+    
+    function updatePreview() {
+        let cryptoAmount = 0;
+        let starsAmount = 0;
+        
+        if (selectedAsset === 'TON') {
+            cryptoAmount = parseFloat(document.getElementById('cryptoAmount').value) || 0;
+            starsAmount = cryptoAmount * 100;
+        } else {
+            cryptoAmount = parseFloat(document.getElementById('cryptoAmountUsdt').value) || 0;
+            starsAmount = cryptoAmount * 50;
+        }
+        
+        document.getElementById('previewStars').innerText = Math.floor(starsAmount) + ' ⭐';
+    }
+    
+    function showDepositModal() {
+        document.getElementById('depositModal').style.display = 'flex';
+        selectAsset('TON');
+        updatePreview();
+    }
+    
+    function closeDepositModal() {
+        document.getElementById('depositModal').style.display = 'none';
+    }
+    
+    function submitDeposit() {
+        let cryptoAmount = 0;
+        
+        if (selectedAsset === 'TON') {
+            cryptoAmount = parseFloat(document.getElementById('cryptoAmount').value);
+            if (!cryptoAmount || cryptoAmount < 0.5) {
+                toast('Минимум 0.5 TON');
+                return;
+            }
+            if (cryptoAmount > 1000) {
+                toast('Максимум 1000 TON');
+                return;
+            }
+        } else {
+            cryptoAmount = parseFloat(document.getElementById('cryptoAmountUsdt').value);
+            if (!cryptoAmount || cryptoAmount < 1) {
+                toast('Минимум 1 USDT');
+                return;
+            }
+            if (cryptoAmount > 10000) {
+                toast('Максимум 10000 USDT');
+                return;
+            }
+        }
+        
+        toast('Создание счёта...');
+        
+        fetch('/api/deposit', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                telegram_id: uid, 
+                asset: selectedAsset, 
+                cryptoAmount: cryptoAmount 
+            })
+        }).then(res => res.json()).then(data => {
+            if (data.success) {
+                toast(`✅ Счёт создан! Оплатите ${data.cryptoAmount} ${data.asset}, получите ${data.starsAmount}⭐`);
+                window.open(data.payUrl, '_blank');
+                closeDepositModal();
+            } else {
+                toast(data.error || 'Ошибка создания счёта');
+            }
+        }).catch(err => {
+            toast('Ошибка сервера');
+            console.error(err);
+        });
+    }
+    
+    document.getElementById('cryptoAmount')?.addEventListener('input', updatePreview);
+    document.getElementById('cryptoAmountUsdt')?.addEventListener('input', updatePreview);
+
+    // ==================== РАКЕТА ====================
+    
+    function updateRocketPosition(multiplier) {
+        const rocket = document.getElementById('rocketShip');
+        if (!rocket) return;
+        if (!isFlying) {
+            rocket.style.bottom = minBottom + 'px';
+            return;
+        }
+        let progress = Math.min(1, (multiplier - 1) / 4);
+        let bottom = minBottom + (rocketMaxHeight * progress);
+        rocket.style.bottom = bottom + 'px';
+    }
+    
+    function showExplosion() {
+        const explosion = document.getElementById('explosion');
+        const rocket = document.getElementById('rocketShip');
+        rocket.classList.add('crashed');
+        explosion.classList.add('active');
+        setTimeout(() => {
+            explosion.classList.remove('active');
+            rocket.classList.remove('crashed');
+        }, 500);
+    }
+    
+    function resetRocketPosition() {
+        const rocket = document.getElementById('rocketShip');
+        if (rocket) rocket.style.bottom = minBottom + 'px';
+    }
+
     function updateCrashBet() {
         if (hasActiveBet) { toast("Нельзя менять ставку после её создания"); return; }
         let val = parseInt(document.getElementById('crashBetInput').value);
@@ -766,7 +993,7 @@
 
     function placeBet() {
         if (hasActiveBet) { toast("У вас уже есть ставка"); return; }
-        if (stars < currentBet) { toast("Не хватает звёзд"); return; }
+        if (!checkBalanceBeforeBet(currentBet)) return;
         autoEnabled = document.getElementById('autoCashoutToggle').checked;
         autoValue = parseFloat(document.getElementById('autoCashoutVal').value);
         socket.emit('rocket_place_bet', { telegram_id: uid, name: pname, amount: currentBet, autoCashout: autoValue, avatar: userAvatarUrl || pname.charAt(0) }, (res) => {
@@ -914,9 +1141,7 @@
     });
     socket.emit('rocket_get_history');
 
-    // ========== МИНЫ (ИСПРАВЛЕНЫ: ОДНА КНОПКА + ПРАВИЛЬНЫЙ КЭШАУТ) ==========
-    let minesBet = 20, minesActive = false, minesRevealed = 0, minesMinesCount = 5, minesGridActive = false, minesCurrentWinAmount = 0, minesMult = 1;
-    let minesWaiting = false;
+    // ==================== МИНЫ ====================
     
     function minesBetAdj(type) {
         if (minesActive) { toast("Нельзя менять ставку во время игры!"); return; }
@@ -939,23 +1164,24 @@
 
     function startMinesGame() {
         if (minesActive) { toast("Игра уже активна!"); return; }
-        if (stars < minesBet) { toast("Не хватает звёзд"); return; }
+        if (!checkBalanceBeforeBet(minesBet)) return;
         const minesCount = parseInt(document.getElementById('minesCountSelect').value);
         
-        console.log('🎮 Запуск минов:', { telegram_id: uid, betAmount: minesBet, minesCount });
-        
         socket.emit('mines_start', { telegram_id: uid, betAmount: minesBet, minesCount: minesCount }, (res) => {
-            console.log('📥 Ответ сервера мины:', res);
             if (res?.success) {
                 minesActive = true;
                 minesGridActive = true;
+                minesBetAmount = minesBet;
                 minesMinesCount = res.minesCount || minesCount;
                 minesRevealed = 0;
                 minesMult = 1;
                 minesCurrentWinAmount = 0;
                 document.getElementById('minesMult').innerText = '1.00x';
-                document.getElementById('minesBtn').innerText = "💰 Забрать выигрыш";
+                document.getElementById('minesBtn').innerText = "💰 Забрать";
                 document.getElementById('minesBtn').classList.add('btn-cashout');
+                document.getElementById('minesCash').disabled = false;
+                document.getElementById('minesCash').style.background = "linear-gradient(135deg, #00cc66, #009944)";
+                document.getElementById('minesCash').style.color = "#fff";
                 refreshBalance();
                 renderMinesBoard(true);
                 toast(`💣 Игра началась! ${minesMinesCount} мин. Удачи!`);
@@ -974,7 +1200,6 @@
         
         socket.emit('mines_reveal', { telegram_id: uid, cellIndex: index }, (res) => {
             minesWaiting = false;
-            console.log('📥 Ответ открытия:', res);
             if (!res) return;
             if (res.exploded) {
                 toast('💣 ВЗРЫВ! Вы проиграли ставку.');
@@ -984,6 +1209,8 @@
                 renderMinesBoard(false);
                 document.getElementById('minesBtn').innerText = "💣 Новая игра";
                 document.getElementById('minesBtn').classList.remove('btn-cashout');
+                document.getElementById('minesCash').disabled = true;
+                document.getElementById('minesCash').style.background = "#2a2a2a";
                 refreshBalance();
                 if (tg) tg.HapticFeedback?.notificationOccurred('error');
                 return;
@@ -1003,6 +1230,8 @@
                     renderMinesBoard(false);
                     document.getElementById('minesBtn').innerText = "💣 Новая игра";
                     document.getElementById('minesBtn').classList.remove('btn-cashout');
+                    document.getElementById('minesCash').disabled = true;
+                    document.getElementById('minesCash').style.background = "#2a2a2a";
                     refreshBalance();
                     if (tg) tg.HapticFeedback?.notificationOccurred('success');
                 }
@@ -1022,6 +1251,8 @@
                 renderMinesBoard(false);
                 document.getElementById('minesBtn').innerText = "💣 Новая игра";
                 document.getElementById('minesBtn').classList.remove('btn-cashout');
+                document.getElementById('minesCash').disabled = true;
+                document.getElementById('minesCash').style.background = "#2a2a2a";
                 refreshBalance();
                 if (tg) tg.HapticFeedback?.impactOccurred('light');
             } else toast(res?.error || 'Ошибка');
@@ -1052,10 +1283,8 @@
         }
     });
 
-    // ========== РУЛЕТКА ==========
-    let rouletteBet = 10, rouletteBets = [], rouletteSpinning = false, rouletteHasBet = false;
-    let rouletteTimer = null;
-
+    // ==================== РУЛЕТКА ====================
+    
     function updateRouletteWheel() {
         const wheel = document.getElementById('rouletteWheel');
         if (!wheel) return;
@@ -1151,12 +1380,9 @@
     function placeRoulette() {
         if (rouletteHasBet) { toast("У вас уже есть ставка в этом раунде!"); return; }
         if (rouletteSpinning) { toast("Рулетка крутится, подождите!"); return; }
-        if (stars < rouletteBet) { toast("Не хватает звёзд"); return; }
-        
-        console.log('🎲 Отправка ставки в рулетку:', { telegram_id: uid, name: pname, amount: rouletteBet });
+        if (!checkBalanceBeforeBet(rouletteBet)) return;
         
         socket.emit('roulette_place_bet', { telegram_id: uid, name: pname, amount: rouletteBet, avatar: userAvatarUrl || pname.charAt(0) }, (res) => {
-            console.log('📥 Ответ сервера рулетка:', res);
             if (res?.success) {
                 rouletteHasBet = true;
                 refreshBalance();
@@ -1236,7 +1462,6 @@
     }
 
     socket.on('roulette_update', (b) => { 
-        console.log('🎡 Обновление рулетки:', b);
         rouletteBets = b; 
         renderRouletteBets(); 
         startRouletteAutoSpin(); 
@@ -1251,7 +1476,6 @@
     });
     
     socket.on('roulette_result', (d) => {
-        console.log('🏆 Результат рулетки:', d);
         rouletteSpinning = false;
         document.getElementById('roulettePlaceBtn').disabled = false;
         document.getElementById('rouletteCancelBtn').disabled = false;
@@ -1271,10 +1495,11 @@
     });
 
     socket.on('roulette_get_bets', (cb) => {
-        cb(rouletteBets);
+        if (cb) cb(rouletteBets);
     });
 
-    // ========== ЛИДЕРЫ ==========
+    // ==================== ЛИДЕРЫ ====================
+    
     function renderPodium(leaders) {
         const podium = document.getElementById('podiumContainer');
         if (!leaders || leaders.length === 0) { podium.innerHTML = '<div class="empty">🏆 Нет данных</div>'; return; }
@@ -1330,7 +1555,8 @@
         if (data.length <= 3) cont.innerHTML = '<div class="empty">Нет других игроков</div>';
     });
 
-    // ========== ПРОФИЛЬ ==========
+    // ==================== ПРОФИЛЬ ====================
+    
     function loadReferralStats() {
         socket.emit('get_referral_stats', uid, (data) => {
             if (data) {
@@ -1358,7 +1584,7 @@
                 </div>
             `).join('');
         } else if (tab === 'refs') {
-            const refLink = `https://t.me/DadTonBot?startapp=ref_${uid.slice(-6)}`;
+            const refLink = `https://t.me/dadton_bot?start=ref_${uid.slice(-6)}`;
             container.innerHTML = `
                 <div style="display: flex; gap: 10px; margin-bottom: 16px;">
                     <div class="stat-card" style="flex:1;"><div style="font-size:10px; color:#6b6b6b;">👥 Рефералы</div><div style="font-size:20px; font-weight:800;" id="refCount">${referralCount}</div></div>
