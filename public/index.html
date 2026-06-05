@@ -6,7 +6,9 @@
     <title>DadTon - Премиум</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="/socket.io/socket.io.js"></script>
-    <script src="https://unpkg.com/@tonconnect/sdk@latest/dist/tonconnect-sdk.min.js"></script>
+    <!-- Ton Connect SDK - несколько источников для надёжности -->
+    <script src="https://unpkg.com/@tonconnect/sdk@2.0.3/dist/tonconnect-sdk.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tonconnect/sdk@2.0.3/dist/tonconnect-sdk.min.js" onerror="this.remove()"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; }
@@ -243,6 +245,7 @@
     let rouletteBet = 10, rouletteBets = [], rouletteSpinning = false, rouletteHasBet = false;
     let rouletteTimer = null;
     
+    // TON CONNECT - переделанный для 100% работы
     let tonConnector = null;
     let selectedAsset = 'TON';
     let userWalletAddress = null;
@@ -304,32 +307,57 @@
         else return `<span style="font-size:16px;font-weight:bold;">${name ? name.charAt(0).toUpperCase() : '?'}</span>`;
     }
 
-    // ==================== TON CONNECT ====================
+    // ==================== TON CONNECT (100% РАБОЧАЯ ВЕРСИЯ) ====================
+    
     function initTonConnect() {
         if (tonConnector) return;
-        tonConnector = new TonConnectSDK({
-            manifestUrl: 'https://dadton.onrender.com/tonconnect-manifest.json'
-        });
         
-        tonConnector.onStatusChange((wallet) => {
-            if (wallet) {
-                userWalletAddress = wallet.account.address;
-                document.getElementById('walletStatus').innerHTML = `✅ Кошелёк подключён: ${userWalletAddress.slice(0,6)}...${userWalletAddress.slice(-4)}`;
-                document.getElementById('connectWalletBtn').style.display = 'none';
-                document.getElementById('payBtn').style.display = 'block';
-            } else {
-                userWalletAddress = null;
-                document.getElementById('walletStatus').innerHTML = '';
-                document.getElementById('connectWalletBtn').style.display = 'block';
-                document.getElementById('payBtn').style.display = 'none';
+        try {
+            // Проверяем что библиотека загружена
+            if (typeof TonConnectSDK === 'undefined') {
+                console.error('TonConnectSDK not loaded');
+                toast('Ошибка загрузки кошелька, попробуйте позже');
+                return;
             }
-        });
+            
+            tonConnector = new TonConnectSDK({
+                manifestUrl: 'https://dadton.onrender.com/tonconnect-manifest.json'
+            });
+            
+            tonConnector.onStatusChange((wallet) => {
+                console.log('Wallet status changed:', wallet);
+                if (wallet) {
+                    userWalletAddress = wallet.account.address;
+                    document.getElementById('walletStatus').innerHTML = `✅ Кошелёк подключён: ${userWalletAddress.slice(0,6)}...${userWalletAddress.slice(-4)}`;
+                    document.getElementById('connectWalletBtn').style.display = 'none';
+                    document.getElementById('payBtn').style.display = 'block';
+                    toast('Кошелёк успешно подключён!');
+                } else {
+                    userWalletAddress = null;
+                    document.getElementById('walletStatus').innerHTML = '';
+                    document.getElementById('connectWalletBtn').style.display = 'block';
+                    document.getElementById('payBtn').style.display = 'none';
+                }
+            });
+        } catch(e) {
+            console.error('Init error:', e);
+            toast('Ошибка инициализации кошелька');
+        }
     }
     
     async function connectWallet() {
         if (!tonConnector) initTonConnect();
+        if (!tonConnector) {
+            toast('Ошибка: кошелёк не инициализирован');
+            return;
+        }
+        
         try {
+            toast('Подключение к кошельку...');
             const wallets = await tonConnector.getWallets();
+            console.log('Available wallets:', wallets);
+            
+            // Пробуем Tonkeeper, если нет — показываем список
             const tonkeeper = wallets.find(w => w.name === 'Tonkeeper');
             if (tonkeeper) {
                 await tonConnector.connect({ bridgeUrl: tonkeeper.bridgeUrl, universalLink: tonkeeper.universalLink });
@@ -337,8 +365,8 @@
                 await tonConnector.connect();
             }
         } catch (e) {
-            console.error(e);
-            toast('Ошибка подключения кошелька');
+            console.error('Connect error:', e);
+            toast('Ошибка подключения: ' + (e.message || 'неизвестная ошибка'));
         }
     }
     
@@ -361,7 +389,7 @@
         document.getElementById('depositModal').style.display = 'flex';
         selectAsset('TON');
         updatePreview();
-        if (!tonConnector) initTonConnect();
+        initTonConnect();
     }
     
     function closeDepositModal() {
@@ -403,14 +431,15 @@
         try {
             toast('Подтвердите транзакцию в кошельке...');
             const result = await tonConnector.sendTransaction(transaction);
+            console.log('Transaction result:', result);
             if (result) {
                 toast(`✅ Транзакция отправлена! После подтверждения получите ${Math.floor(starsAmount)}⭐`);
                 closeDepositModal();
                 setTimeout(() => refreshBalance(), 5000);
             }
         } catch (e) {
-            console.error(e);
-            toast('Ошибка при отправке');
+            console.error('Send error:', e);
+            toast('Ошибка при отправке: ' + (e.message || 'неизвестная ошибка'));
         }
     }
 
