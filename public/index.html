@@ -97,7 +97,7 @@
     </div>
 
     <script>
-        // Константы для теста (используем тестовый кошелёк)
+        // Константы для теста
         const TEST_WALLET = 'UQCEA1RKJ0eAZ_kvpN7tzhrCIh94XBw9ROSeQbaHPXOEOPRP';
         const MANIFEST_URL = 'https://dadton.onrender.com/tonconnect-manifest.json';
         
@@ -115,7 +115,6 @@
             logDiv.appendChild(entry);
             logDiv.scrollTop = logDiv.scrollHeight;
             
-            // Также обновляем статус
             const statusSpan = document.getElementById('statusText');
             if (type === 'error') statusSpan.innerHTML = `❌ ${message}`;
             else if (type === 'success') statusSpan.innerHTML = `✅ ${message}`;
@@ -146,18 +145,35 @@
             }
         }
         
-        // 1. Инициализация SDK
+        // 1. Инициализация SDK (ИСПРАВЛЕНО)
         document.getElementById('initBtn').onclick = function() {
             addLog('Инициализация TON Connect SDK...', 'info');
             
             // Проверяем загрузку библиотеки
             if (typeof TonConnectSDK === 'undefined') {
-                addLog('❌ Ошибка: TonConnectSDK не загружен! Проверьте интернет.', 'error');
+                addLog('❌ Ошибка: TonConnectSDK не загружен!', 'error');
+                return;
+            }
+            
+            // Показываем, что экспортируется
+            addLog(`📦 Доступно: TonConnectSDK, тип: ${typeof TonConnectSDK}`, 'info');
+            
+            // Пробуем разные варианты конструктора
+            let SDKClass = null;
+            
+            if (typeof TonConnectSDK === 'function') {
+                SDKClass = TonConnectSDK;
+                addLog('✅ Использую TonConnectSDK', 'success');
+            } else if (window.TonConnect) {
+                SDKClass = window.TonConnect;
+                addLog('✅ Использую window.TonConnect', 'success');
+            } else {
+                addLog('❌ Не найден конструктор кошелька', 'error');
                 return;
             }
             
             try {
-                tonConnector = new TonConnectSDK({
+                tonConnector = new SDKClass({
                     manifestUrl: MANIFEST_URL
                 });
                 
@@ -177,11 +193,6 @@
                         addLog(`🔓 Кошелёк отключён`, 'info');
                         updateButtons();
                     }
-                });
-                
-                // Проверяем, был ли уже подключён кошелёк
-                tonConnector.restoreConnection().then(() => {
-                    addLog('🔄 Проверка сохранённого подключения...', 'info');
                 });
                 
                 updateButtons();
@@ -206,33 +217,29 @@
                 addLog(`📱 Найдено кошельков: ${wallets.length}`, 'success');
                 
                 wallets.forEach(w => {
-                    addLog(`   - ${w.name} (${w.bridgeUrl ? 'bridge OK' : 'no bridge'})`, 'info');
+                    addLog(`   - ${w.name}`, 'info');
                 });
                 
                 if (!wallets || wallets.length === 0) {
-                    addLog('❌ Кошельки не найдены. Установите Tonkeeper или другой TON кошелёк.', 'error');
+                    addLog('❌ Кошельки не найдены. Установите Tonkeeper.', 'error');
                     return;
                 }
                 
-                // Ищем Tonkeeper или берём первый
                 const preferred = wallets.find(w => w.name === 'Tonkeeper') || wallets[0];
                 addLog(`🔗 Подключение к ${preferred.name}...`, 'info');
                 
                 try {
-                    // Пробуем подключиться
                     await tonConnector.connect({
                         bridgeUrl: preferred.bridgeUrl,
                         universalLink: preferred.universalLink
                     });
-                    addLog('✅ Запрос на подключение отправлен! Откройте кошелёк и подтвердите.', 'success');
+                    addLog('✅ Запрос отправлен! Подтвердите в кошельке.', 'success');
                 } catch (connectError) {
-                    addLog(`⚠️ Ошибка при подключении через bridge: ${connectError.message}`, 'error');
-                    addLog('🔄 Пробуем альтернативный способ...', 'info');
-                    await tonConnector.connect();
+                    addLog(`⚠️ Ошибка: ${connectError.message}`, 'error');
                 }
                 
             } catch(e) {
-                addLog(`❌ Ошибка подключения: ${e.message}`, 'error');
+                addLog(`❌ Ошибка: ${e.message}`, 'error');
                 console.error(e);
             }
         };
@@ -244,35 +251,31 @@
                 return;
             }
             
-            const amount = 0.1; // 0.1 TON для теста
+            const amount = 0.05;
             const nanoAmount = Math.floor(amount * 1e9);
-            const comment = `test_${Date.now()}`;
             
             addLog(`💸 Подготовка транзакции: ${amount} TON`, 'info');
-            addLog(`📝 Комментарий: ${comment}`, 'info');
             addLog(`🏦 Получатель: ${TEST_WALLET.slice(0,6)}...${TEST_WALLET.slice(-4)}`, 'info');
             
             const transaction = {
-                validUntil: Math.floor(Date.now() / 1000) + 300, // 5 минут
+                validUntil: Math.floor(Date.now() / 1000) + 300,
                 messages: [{
                     address: TEST_WALLET,
                     amount: nanoAmount.toString(),
-                    payload: comment
+                    payload: `test_${Date.now()}`
                 }]
             };
             
             try {
-                addLog('⏳ Отправка транзакции в кошелёк...', 'info');
+                addLog('⏳ Отправка в кошелёк...', 'info');
                 const result = await tonConnector.sendTransaction(transaction);
                 addLog(`✅ Транзакция отправлена!`, 'success');
-                addLog(`📦 Результат: ${JSON.stringify(result).slice(0, 200)}`, 'info');
             } catch(e) {
-                addLog(`❌ Ошибка отправки: ${e.message}`, 'error');
-                console.error(e);
+                addLog(`❌ Ошибка: ${e.message}`, 'error');
             }
         };
         
-        // Отключение кошелька
+        // Отключение
         document.getElementById('disconnectBtn').onclick = async function() {
             if (tonConnector) {
                 await tonConnector.disconnect();
@@ -281,16 +284,15 @@
             }
         };
         
-        // Автоматическая инициализация при загрузке страницы
+        // Автозапуск
         setTimeout(() => {
-            addLog('💡 Нажмите кнопку "Инициализировать SDK" для начала', 'info');
-            addLog(`🌐 Манифест URL: ${MANIFEST_URL}`, 'info');
+            addLog('💡 Нажмите "Инициализировать SDK"', 'info');
+            addLog(`🌐 Манифест: ${MANIFEST_URL}`, 'info');
             
-            // Проверяем доступность манифеста
             fetch(MANIFEST_URL)
                 .then(res => res.json())
-                .then(data => addLog(`✅ Манифест доступен: ${JSON.stringify(data)}`, 'success'))
-                .catch(err => addLog(`❌ Манифест недоступен: ${err.message}. Проверьте URL.`, 'error'));
+                .then(data => addLog(`✅ Манифест OK: ${JSON.stringify(data)}`, 'success'))
+                .catch(err => addLog(`❌ Манифест недоступен: ${err.message}`, 'error'));
         }, 500);
     </script>
 </body>
